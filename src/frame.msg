@@ -19,7 +19,7 @@
 cplusplus {{
 //	Any includes goes here
 	#include <bitset>
-	typedef std::bitset<9> parity_bits;
+	typedef std::bitset<10> parity_bits;
 	typedef std::bitset<8> char_bits;
 }}
 class noncobject parity_bits;

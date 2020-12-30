@@ -23,6 +23,27 @@ void Node::initialize()
     scheduleAt(simTime() + interval, new cMessage(""));
 }
 
+void Node::add_haming (Frame_Base* frame)
+{
+    /*
+     * You got a frame that contains: [payload[64], parity, start/end, ACK, NACK]
+     * Implement Hamming Code so that the parity bits are set appropriately
+     * Note that: Byte stuffing occures before hamming, so hamming takes care of that too.
+     *            Since we have 512 bits MAX, parity bits Max is: 10
+     *            Some payload characters: bitset <8>, will be zero padding, so you might wanna ignore these
+     *            and accordingly ignore them when correcting.
+     * */
+    return;
+}
+bool Node::error_detect_correct (Frame_Base* frame)
+{
+    return true;
+}
+void Node::byte_stuff (Frame_Base* frame)
+{
+    return;
+}
+
 void Node::handleMessage(cMessage *msg)
 {
     if (msg->isSelfMessage()) { //Host wants to send

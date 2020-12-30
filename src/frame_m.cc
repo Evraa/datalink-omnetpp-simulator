@@ -26,7 +26,6 @@
 
 #include <iostream>
 #include <sstream>
-#include <string>
 #include "frame_m.h"
 
 namespace omnetpp {
