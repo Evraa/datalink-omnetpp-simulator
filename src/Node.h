@@ -27,7 +27,7 @@ class Node : public cSimpleModule
 {
   protected:
     virtual void initialize();
-    virtual void handleMessage(cMessage *msg);
+    virtual void handleMessage(cMessage *msg);          //Kareem and Omar
     virtual void byte_stuff (Frame_Base* frame);        //Sayed
     virtual void add_haming (Frame_Base* frame);        //Sayed
     virtual bool error_detect_correct (Frame_Base* frame);//Sayed
