@@ -7,6 +7,7 @@ import ned.IdealChannel;
 
 network Data_Link
 {
+//    These @display is GUI, don't bother
     parameters:
         int N = default(8);
         @display("bgb=349,228;i=block/classifier2");

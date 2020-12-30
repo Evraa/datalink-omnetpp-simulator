@@ -179,7 +179,6 @@ inline std::ostream& operator<<(std::ostream& out, const std::vector<T,A>& vec)
 
 Frame_Base::Frame_Base(const char *name, short kind) : ::omnetpp::cPacket(name,kind)
 {
-    this->someField = 0;
 }
 
 Frame_Base::Frame_Base(const Frame_Base& other) : ::omnetpp::cPacket(other)
@@ -201,31 +200,50 @@ Frame_Base& Frame_Base::operator=(const Frame_Base& other)
 
 void Frame_Base::copy(const Frame_Base& other)
 {
-    this->someField = other.someField;
+    for (unsigned int i=0; i<32; i++)
+        this->payload[i] = other.payload[i];
+    this->parity = other.parity;
 }
 
 void Frame_Base::parsimPack(omnetpp::cCommBuffer *b) const
 {
     ::omnetpp::cPacket::parsimPack(b);
-    doParsimPacking(b,this->someField);
-    // field anotherField is abstract -- please do packing in customized class
+    doParsimArrayPacking(b,this->payload,32);
+    doParsimPacking(b,this->parity);
 }
 
 void Frame_Base::parsimUnpack(omnetpp::cCommBuffer *b)
 {
     ::omnetpp::cPacket::parsimUnpack(b);
-    doParsimUnpacking(b,this->someField);
-    // field anotherField is abstract -- please do unpacking in customized class
+    doParsimArrayUnpacking(b,this->payload,32);
+    doParsimUnpacking(b,this->parity);
 }
 
-int Frame_Base::getSomeField() const
+unsigned int Frame_Base::getPayloadArraySize() const
 {
-    return this->someField;
+    return 32;
 }
 
-void Frame_Base::setSomeField(int someField)
+char_vec& Frame_Base::getPayload(unsigned int k)
 {
-    this->someField = someField;
+    if (k>=32) throw omnetpp::cRuntimeError("Array of size 32 indexed by %lu", (unsigned long)k);
+    return this->payload[k];
+}
+
+void Frame_Base::setPayload(unsigned int k, const char_vec& payload)
+{
+    if (k>=32) throw omnetpp::cRuntimeError("Array of size 32 indexed by %lu", (unsigned long)k);
+    this->payload[k] = payload;
+}
+
+parity_vec& Frame_Base::getParity()
+{
+    return this->parity;
+}
+
+void Frame_Base::setParity(const parity_vec& parity)
+{
+    this->parity = parity;
 }
 
 class FrameDescriptor : public omnetpp::cClassDescriptor
@@ -306,8 +324,8 @@ unsigned int FrameDescriptor::getFieldTypeFlags(int field) const
         field -= basedesc->getFieldCount();
     }
     static unsigned int fieldTypeFlags[] = {
-        FD_ISEDITABLE,
-        FD_ISEDITABLE,
+        FD_ISARRAY | FD_ISCOMPOUND,
+        FD_ISCOMPOUND,
     };
     return (field>=0 && field<2) ? fieldTypeFlags[field] : 0;
 }
@@ -321,8 +339,8 @@ const char *FrameDescriptor::getFieldName(int field) const
         field -= basedesc->getFieldCount();
     }
     static const char *fieldNames[] = {
-        "someField",
-        "anotherField",
+        "payload",
+        "parity",
     };
     return (field>=0 && field<2) ? fieldNames[field] : nullptr;
 }
@@ -331,8 +349,8 @@ int FrameDescriptor::findField(const char *fieldName) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     int base = basedesc ? basedesc->getFieldCount() : 0;
-    if (fieldName[0]=='s' && strcmp(fieldName, "someField")==0) return base+0;
-    if (fieldName[0]=='a' && strcmp(fieldName, "anotherField")==0) return base+1;
+    if (fieldName[0]=='p' && strcmp(fieldName, "payload")==0) return base+0;
+    if (fieldName[0]=='p' && strcmp(fieldName, "parity")==0) return base+1;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -345,8 +363,8 @@ const char *FrameDescriptor::getFieldTypeString(int field) const
         field -= basedesc->getFieldCount();
     }
     static const char *fieldTypeStrings[] = {
-        "int",
-        "int",
+        "char_vec",
+        "parity_vec",
     };
     return (field>=0 && field<2) ? fieldTypeStrings[field] : nullptr;
 }
@@ -387,6 +405,7 @@ int FrameDescriptor::getFieldArraySize(void *object, int field) const
     }
     Frame_Base *pp = (Frame_Base *)object; (void)pp;
     switch (field) {
+        case 0: return 32;
         default: return 0;
     }
 }
@@ -415,8 +434,16 @@ std::string FrameDescriptor::getFieldValueAsString(void *object, int field, int 
     }
     Frame_Base *pp = (Frame_Base *)object; (void)pp;
     switch (field) {
-        case 0: return long2string(pp->getSomeField());
-        case 1: return long2string(pp->getAnotherField());
+        case 0: {
+            std::stringstream out;
+//            out << pp->getPayload(i);
+            return out.str();
+        }
+        case 1: {
+            std::stringstream out;
+//            out << pp->getParity().to_string();
+            return out.str();
+        }
         default: return "";
     }
 }
@@ -431,8 +458,6 @@ bool FrameDescriptor::setFieldValueAsString(void *object, int field, int i, cons
     }
     Frame_Base *pp = (Frame_Base *)object; (void)pp;
     switch (field) {
-        case 0: pp->setSomeField(string2long(value)); return true;
-        case 1: pp->setAnotherField(string2long(value)); return true;
         default: return false;
     }
 }
@@ -446,6 +471,8 @@ const char *FrameDescriptor::getFieldStructName(int field) const
         field -= basedesc->getFieldCount();
     }
     switch (field) {
+        case 0: return omnetpp::opp_typename(typeid(char_vec));
+        case 1: return omnetpp::opp_typename(typeid(parity_vec));
         default: return nullptr;
     };
 }
@@ -460,6 +487,8 @@ void *FrameDescriptor::getFieldStructValuePointer(void *object, int field, int i
     }
     Frame_Base *pp = (Frame_Base *)object; (void)pp;
     switch (field) {
+        case 0: return (void *)(&pp->getPayload(i)); break;
+        case 1: return (void *)(&pp->getParity()); break;
         default: return nullptr;
     }
 }
