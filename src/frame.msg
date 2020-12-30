@@ -18,23 +18,23 @@
 //
 cplusplus {{
 //	Any includes goes here
-//EX:
 	#include <bitset>
-//	#include <vector>
-	typedef std::bitset<9> parity_vec;
-	typedef std::bitset<8> char_vec;
-	
-//	typedef std::vector <std::bitset<8> > char_vec;
-	
+	typedef std::bitset<9> parity_bits;
+	typedef std::bitset<8> char_bits;
 }}
-class noncobject parity_vec;
-class noncobject char_vec; 
+class noncobject parity_bits;
+class noncobject char_bits; 
 
 
 packet Frame {
     @customize(true);  // see the generated C++ header for more info
-    char_vec payload [32];	//max: 256 bits	.. min: 14 bits .. by Ev Definition and assumption.
-    parity_vec parity; 		//max: 9 bits .. min: 5
+    //max char count is 32, after byte stuffing, will be 64
+    //in bits 256*2
+    char_bits payload [64];	//max: 256 bits	.. min: 14 bits .. by Ev Definition and assumption.
+    parity_bits parity; 		//max: 9 bits .. min: 5
     int ACK;
     int NACK;
+    char_bits start_flag;
+    char_bits end_flag;
+    
 }
