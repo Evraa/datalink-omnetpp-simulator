@@ -29,7 +29,7 @@ void Node::construct_msg_q(){
             int my_id = std::stoi(line);
             if (this->getIndex() == my_id)
             {
-                std::cout <<"My ID: "<<my_id<<endl;
+                std::cout <<"I am: "<<this->getIndex() <<"\tReading my msgs."<<endl;
                 std::getline (myfile,line);
                 int rcv_id = std::stoi(line);
                 std::getline (myfile,line);
@@ -38,12 +38,13 @@ void Node::construct_msg_q(){
                 int k = 0;
                 for (std::string::size_type i = 0; i < line.size(); i++)
                 {
-                    std::cout <<"char[i]: "<<line[i]<<endl;
                     std::bitset<8> *tmp = new std::bitset<8>(line[i]);
                     frame->setPayload(k, (*tmp));
                     k += 1;
                 }
-                this->messages_info[frame] = rcv_id;
+                //Add it to the uo_map.
+                std::tuple<int, Frame_Base*>* temp= new std::tuple<int, Frame_Base*>(rcv_id, frame);
+                this->messages_info.push(temp);
             }
             else
             {
@@ -52,6 +53,8 @@ void Node::construct_msg_q(){
             }
         }
         myfile.close();
+        std::cout <<"I am: "<<this->getIndex()<<"\tDone reading my msgs."<<endl;
+
     }
     else
     {
@@ -62,13 +65,21 @@ void Node::construct_msg_q(){
     return;
 }
 
-void Node::initialize()
+void Node::schedule_self_msg()
 {
     double interval = exponential(1 / par("lambda").doubleValue());
-    scheduleAt(simTime() + interval, new cMessage(""));
+    EV << ". Scheduled a new packet after " << interval << "s";
+    scheduleAt(simTime() + interval, new Frame_Base());
+}
 
+void Node::initialize()
+{
+    //First of all, read the msgs and their Senders.
     construct_msg_q();
 
+    //IDK if this needs to be here, it's up to Kareem.
+    if (this->messages_info.size()>0)
+        this->schedule_self_msg();
 }
 
 void Node::add_haming (Frame_Base* frame)
@@ -81,54 +92,75 @@ void Node::add_haming (Frame_Base* frame)
      *            Some payload characters: bitset <8>, will be zero padding, so you might wanna ignore these
      *            and accordingly ignore them when correcting.
      * */
+    //EX:
+//    std::cout <<"Added Parity bits\n";
+//    std::bitset<10>* bits = new std::bitset<10>;
+//    (*bits) = 011110011;
+//    frame->setParity((*bits));
     return;
 }
 bool Node::error_detect_correct (Frame_Base* frame)
 {
+    std::cout <<"Detected True\n";
     return true;
 }
 void Node::byte_stuff (Frame_Base* frame)
 {
+    std::cout <<"Added byte stuff.\n";
     return;
 }
 void Node::modify_msg (Frame_Base* frame)
 {
+    /**
+     * When Delaying you'll need send_delay() function
+     * When curropting you'll need some propabilistic paramters.
+     */
+    std::cout <<"Message is Modified\n";
     return;
 }
 
 void Node::handleMessage(cMessage *msg)
 {
-    if (msg->isSelfMessage()) { //Host wants to send
 
-        int rand, dest;
-        do { //Avoid sending to yourself
-            rand = uniform(0, gateSize("outs"));
-        } while(rand == getIndex());
+    if (msg->isSelfMessage() && this->messages_info.size()>0)
+    {
+        //Host wants to send a msg.
+        //Fetch Receiver id
+        int rcv_id = std::get<0>(*this->messages_info.front());
+        //Fetch The Frame
+        Frame_Base* next_frame = std::get<1>(*this->messages_info.front());
+        this->messages_info.pop();
 
-        //Calculate appropriate gate number
-        dest = rand;
-        if (rand > getIndex())
-            dest--;
+        //Add parity and stuffing
+        this->byte_stuff(next_frame);
+        this->add_haming(next_frame);
+        //Curropt the msg
+        this->modify_msg(next_frame);
 
-        std::stringstream ss;
-        ss << rand;
-        EV << "Sending "<< ss.str() <<" from source " << getIndex() << "\n";
-        delete msg;
-        msg = new cMessage(ss.str().c_str());
-        send(msg, "outs", dest);
+        //cout...
+        std::cout <<"Host: "<<this->getIndex()<< "\tSending: "<<next_frame->getPayload(0) << "\tTo: "<<rcv_id<<endl;
 
-        double interval = exponential(1 / par("lambda").doubleValue());
-        EV << ". Scheduled a new packet after " << interval << "s";
-        scheduleAt(simTime() + interval, new cMessage(""));
+        //at what gate?
+        int dest_gate = rcv_id;
+        if (rcv_id > getIndex())
+            dest_gate--;
+
+        //send it..
+        send(next_frame, "outs", dest_gate);
+
+        //Still Got More?
+        if (this->messages_info.size()>0)
+            this->schedule_self_msg();
     }
-    else {
-        //atoi functions converts a string to int
-        //Check if this is the proper destination
-        if (atoi(msg->getName()) == getIndex())
-            bubble("Message received");
-        else
-            bubble("Wrong destination");
-        delete msg;
+    else
+    {
+        //This is a Receiving func.
+        Frame_Base* msg_rcv = check_and_cast<Frame_Base *> (msg);
+
+        //error detect and correct
+        this->error_detect_correct(msg_rcv);
+        //cout..
+        std::cout <<"RSV: "<<this->getIndex()<< "\tReceived: "<<msg_rcv->getPayload(0)<<endl;
     }
 }
 
