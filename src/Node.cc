@@ -17,10 +17,58 @@
 
 Define_Module(Node);
 
+void Node::construct_msg_q(){
+    //Open the file
+    std::ifstream myfile("../msgs/msgs.txt");
+    std::string line;
+    if (myfile.is_open())
+    {
+        while (!myfile.eof())
+        {
+            std::getline (myfile,line);
+            int my_id = std::stoi(line);
+            if (this->getIndex() == my_id)
+            {
+                std::cout <<"My ID: "<<my_id<<endl;
+                std::getline (myfile,line);
+                int rcv_id = std::stoi(line);
+                std::getline (myfile,line);
+                //Construct a frame
+                Frame_Base* frame = new Frame_Base;
+                int k = 0;
+                for (std::string::size_type i = 0; i < line.size(); i++)
+                {
+                    std::cout <<"char[i]: "<<line[i]<<endl;
+                    std::bitset<8> *tmp = new std::bitset<8>(line[i]);
+                    frame->setPayload(k, (*tmp));
+                    k += 1;
+                }
+                this->messages_info[frame] = rcv_id;
+            }
+            else
+            {
+                std::getline (myfile,line);
+                std::getline (myfile,line);
+            }
+        }
+        myfile.close();
+    }
+    else
+    {
+        std::cout <<"File ain't opened\nIt might not be created!\nAn error occured while opening!\n";
+        std::cout <<"PROGRAM SHALL ABORT\n";
+        std::exit(3);
+    }
+    return;
+}
+
 void Node::initialize()
 {
     double interval = exponential(1 / par("lambda").doubleValue());
     scheduleAt(simTime() + interval, new cMessage(""));
+
+    construct_msg_q();
+
 }
 
 void Node::add_haming (Frame_Base* frame)
@@ -40,6 +88,10 @@ bool Node::error_detect_correct (Frame_Base* frame)
     return true;
 }
 void Node::byte_stuff (Frame_Base* frame)
+{
+    return;
+}
+void Node::modify_msg (Frame_Base* frame)
 {
     return;
 }

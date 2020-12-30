@@ -17,6 +17,10 @@
 #define __DATA_LINK_NODE_H_
 
 #include <omnetpp.h>
+#include <fstream>
+#include <string>
+#include <map>
+#include <bitset>
 #include "frame_m.h"
 using namespace omnetpp;
 
@@ -25,12 +29,15 @@ using namespace omnetpp;
  */
 class Node : public cSimpleModule
 {
+    std::map <Frame_Base*, int> messages_info;
   protected:
     virtual void initialize();
-    virtual void handleMessage(cMessage *msg);          //Kareem and Omar
-    virtual void byte_stuff (Frame_Base* frame);        //Sayed
-    virtual void add_haming (Frame_Base* frame);        //Sayed
-    virtual bool error_detect_correct (Frame_Base* frame);//Sayed
+    virtual void construct_msg_q();         //Ev
+    virtual void handleMessage(cMessage *msg);              //Kareem
+    virtual void modify_msg(Frame_Base *frame);                 //Omar
+    virtual void byte_stuff (Frame_Base* frame);            //Sayed
+    virtual void add_haming (Frame_Base* frame);            //Sayed
+    virtual bool error_detect_correct (Frame_Base* frame);  //Sayed
 };
 
 #endif

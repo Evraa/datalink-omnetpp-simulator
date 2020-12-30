@@ -91,7 +91,7 @@ class Frame_Base : public ::omnetpp::cPacket
   public:
     virtual ~Frame_Base();
     Frame_Base(const char *name=nullptr, short kind=0);
-    virtual Frame_Base *dup() const override {return new Frame_Base (*this);}
+    virtual Frame_Base *dup() const override {return new Frame_Base(*this);}
     virtual void parsimPack(omnetpp::cCommBuffer *b) const override;
     virtual void parsimUnpack(omnetpp::cCommBuffer *b) override;
 
