@@ -38,6 +38,8 @@
  *     \@customize(true);  // see the generated C++ header for more info
  *     char_vec payload[32];	//max: 256 bits	.. min: 14 bits .. by Ev Definition and assumption.
  *     parity_vec parity; 		//max: 9 bits .. min: 5
+ *     int ACK;
+ *     int NACK;
  * }
  * </pre>
  *
@@ -70,6 +72,8 @@ class Frame_Base : public ::omnetpp::cPacket
   protected:
     char_vec payload[32];
     parity_vec parity;
+    int ACK;
+    int NACK;
 
   private:
     void copy(const Frame_Base& other);
@@ -83,11 +87,9 @@ class Frame_Base : public ::omnetpp::cPacket
     Frame_Base& operator=(const Frame_Base& other);
 
   public:
-    virtual ~Frame_Base();
     Frame_Base(const char *name=nullptr, short kind=0);
-    virtual Frame_Base *dup() const override {
-        return new Frame_Base (*this);
-    }
+    virtual ~Frame_Base();
+    virtual Frame_Base *dup() const override {return new Frame_Base (*this);}
     virtual void parsimPack(omnetpp::cCommBuffer *b) const override;
     virtual void parsimUnpack(omnetpp::cCommBuffer *b) override;
 
@@ -99,6 +101,10 @@ class Frame_Base : public ::omnetpp::cPacket
     virtual parity_vec& getParity();
     virtual const parity_vec& getParity() const {return const_cast<Frame_Base*>(this)->getParity();}
     virtual void setParity(const parity_vec& parity);
+    virtual int getACK() const;
+    virtual void setACK(int ACK);
+    virtual int getNACK() const;
+    virtual void setNACK(int NACK);
 };
 
 

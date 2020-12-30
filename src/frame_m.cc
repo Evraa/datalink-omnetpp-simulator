@@ -179,6 +179,8 @@ inline std::ostream& operator<<(std::ostream& out, const std::vector<T,A>& vec)
 
 Frame_Base::Frame_Base(const char *name, short kind) : ::omnetpp::cPacket(name,kind)
 {
+    this->ACK = 0;
+    this->NACK = 0;
 }
 
 Frame_Base::Frame_Base(const Frame_Base& other) : ::omnetpp::cPacket(other)
@@ -203,6 +205,8 @@ void Frame_Base::copy(const Frame_Base& other)
     for (unsigned int i=0; i<32; i++)
         this->payload[i] = other.payload[i];
     this->parity = other.parity;
+    this->ACK = other.ACK;
+    this->NACK = other.NACK;
 }
 
 void Frame_Base::parsimPack(omnetpp::cCommBuffer *b) const
@@ -210,6 +214,8 @@ void Frame_Base::parsimPack(omnetpp::cCommBuffer *b) const
     ::omnetpp::cPacket::parsimPack(b);
     doParsimArrayPacking(b,this->payload,32);
     doParsimPacking(b,this->parity);
+    doParsimPacking(b,this->ACK);
+    doParsimPacking(b,this->NACK);
 }
 
 void Frame_Base::parsimUnpack(omnetpp::cCommBuffer *b)
@@ -217,6 +223,8 @@ void Frame_Base::parsimUnpack(omnetpp::cCommBuffer *b)
     ::omnetpp::cPacket::parsimUnpack(b);
     doParsimArrayUnpacking(b,this->payload,32);
     doParsimUnpacking(b,this->parity);
+    doParsimUnpacking(b,this->ACK);
+    doParsimUnpacking(b,this->NACK);
 }
 
 unsigned int Frame_Base::getPayloadArraySize() const
@@ -244,6 +252,26 @@ parity_vec& Frame_Base::getParity()
 void Frame_Base::setParity(const parity_vec& parity)
 {
     this->parity = parity;
+}
+
+int Frame_Base::getACK() const
+{
+    return this->ACK;
+}
+
+void Frame_Base::setACK(int ACK)
+{
+    this->ACK = ACK;
+}
+
+int Frame_Base::getNACK() const
+{
+    return this->NACK;
+}
+
+void Frame_Base::setNACK(int NACK)
+{
+    this->NACK = NACK;
 }
 
 class FrameDescriptor : public omnetpp::cClassDescriptor
@@ -312,7 +340,7 @@ const char *FrameDescriptor::getProperty(const char *propertyname) const
 int FrameDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 2+basedesc->getFieldCount() : 2;
+    return basedesc ? 4+basedesc->getFieldCount() : 4;
 }
 
 unsigned int FrameDescriptor::getFieldTypeFlags(int field) const
@@ -326,8 +354,10 @@ unsigned int FrameDescriptor::getFieldTypeFlags(int field) const
     static unsigned int fieldTypeFlags[] = {
         FD_ISARRAY | FD_ISCOMPOUND,
         FD_ISCOMPOUND,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
     };
-    return (field>=0 && field<2) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<4) ? fieldTypeFlags[field] : 0;
 }
 
 const char *FrameDescriptor::getFieldName(int field) const
@@ -341,8 +371,10 @@ const char *FrameDescriptor::getFieldName(int field) const
     static const char *fieldNames[] = {
         "payload",
         "parity",
+        "ACK",
+        "NACK",
     };
-    return (field>=0 && field<2) ? fieldNames[field] : nullptr;
+    return (field>=0 && field<4) ? fieldNames[field] : nullptr;
 }
 
 int FrameDescriptor::findField(const char *fieldName) const
@@ -351,6 +383,8 @@ int FrameDescriptor::findField(const char *fieldName) const
     int base = basedesc ? basedesc->getFieldCount() : 0;
     if (fieldName[0]=='p' && strcmp(fieldName, "payload")==0) return base+0;
     if (fieldName[0]=='p' && strcmp(fieldName, "parity")==0) return base+1;
+    if (fieldName[0]=='A' && strcmp(fieldName, "ACK")==0) return base+2;
+    if (fieldName[0]=='N' && strcmp(fieldName, "NACK")==0) return base+3;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -365,8 +399,10 @@ const char *FrameDescriptor::getFieldTypeString(int field) const
     static const char *fieldTypeStrings[] = {
         "char_vec",
         "parity_vec",
+        "int",
+        "int",
     };
-    return (field>=0 && field<2) ? fieldTypeStrings[field] : nullptr;
+    return (field>=0 && field<4) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **FrameDescriptor::getFieldPropertyNames(int field) const
@@ -434,16 +470,14 @@ std::string FrameDescriptor::getFieldValueAsString(void *object, int field, int 
     }
     Frame_Base *pp = (Frame_Base *)object; (void)pp;
     switch (field) {
-        case 0: {
-            std::stringstream out;
-//            out << pp->getPayload(i);
-            return out.str();
-        }
-        case 1: {
-            std::stringstream out;
-//            out << pp->getParity().to_string();
-            return out.str();
-        }
+        case 0: {std::stringstream out;
+        //out << pp->getPayload(i);
+        return out.str();}
+        case 1: {std::stringstream out;
+//        out << pp->getParity();
+        return out.str();}
+        case 2: return long2string(pp->getACK());
+        case 3: return long2string(pp->getNACK());
         default: return "";
     }
 }
@@ -458,6 +492,8 @@ bool FrameDescriptor::setFieldValueAsString(void *object, int field, int i, cons
     }
     Frame_Base *pp = (Frame_Base *)object; (void)pp;
     switch (field) {
+        case 2: pp->setACK(string2long(value)); return true;
+        case 3: pp->setNACK(string2long(value)); return true;
         default: return false;
     }
 }

@@ -35,4 +35,6 @@ packet Frame {
     @customize(true);  // see the generated C++ header for more info
     char_vec payload [32];	//max: 256 bits	.. min: 14 bits .. by Ev Definition and assumption.
     parity_vec parity; 		//max: 9 bits .. min: 5
+    int ACK;
+    int NACK;
 }
