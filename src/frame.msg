@@ -31,7 +31,7 @@ packet Frame {
     //max char count is 32, after byte stuffing, will be 64
     //in bits 256*2
     char_bits payload [64];	//max: 256 bits	.. min: 14 bits .. by Ev Definition and assumption.
-    parity_bits parity; 		//max: 9 bits .. min: 5
+    parity_bits parity; 		//max: 10 bits .. min: 5
     int ACK;
     int NACK;
     char_bits start_flag;
