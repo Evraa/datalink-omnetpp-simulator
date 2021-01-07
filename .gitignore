@@ -1,0 +1,5 @@
+out
+simulations
+.qtenvrc
+data_link_dbg*
+.settings/language.settings.xml
