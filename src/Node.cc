@@ -105,50 +105,65 @@ bool Node::error_detect_correct (Frame_Base* frame)
     return true;
 }
 
-void Node::byte_stuff (Frame_Base* frame)
+Frame_Base* Node::byte_stuff (const std::string& msg)
 {
     std::cout <<"Add byte stuffing.\n";
-    frame->setStart_flag(FLAG);
-    frame->setEnd_flag(FLAG);
-    std::vector<char>finalPayload;
-    for (int i = 0; i < (int)frame->getPayloadArraySize(); i++)
+    // add byte stuffing
+    std::vector<char>bytes;
+    bytes.push_back(FLAG);
+    for (int i = 0; i < (int)msg.size(); i++)
     {
-        char byte = (char)frame->getPayload(i).to_ulong();
+        char byte = msg[i];
         if (byte == FLAG || byte == ESC)
-            finalPayload.push_back(ESC);
-        finalPayload.push_back(byte);
+            bytes.push_back(ESC);
+        bytes.push_back(byte);
     }
-    for (int i = 0; i < (int)finalPayload.size(); i++)
+    bytes.push_back(FLAG);
+    // frame and transform to bits
+    std::vector<bool> payload;
+    for (int i = 0; i < (int)bytes.size(); i++)
     {
-        frame->setPayload(i, finalPayload[i]);
+        std::bitset<8> bits = std::bitset<8>(bytes[i]);
+        for (int j = 7; j >= 0; j--)
+            payload.push_back(bits[j]);
     }
-    return;
+    Frame_Base* frm = new Frame_Base();
+    frm->setPayload(payload);
+    return frm;
 }
 
-void Node::byte_destuff (Frame_Base* frame)
+std::string Node::byte_destuff (Frame_Base* frame)
 {
-    //TODO: may return the payload without the frame instead
     std::cout <<"Remove byte stuffing.\n";
 
-    std::vector<char>finalPayload;
-    int payloadSize = frame->getPayloadArraySize();
-    for (int i = 0; i < payloadSize; i++)
+    std::vector<bool> payload = frame->getPayload();
+    std::vector<char> bytes;
+    for (int i = 8; i < (int)payload.size()-8;)
     {
-        char byte = (char)frame->getPayload(i).to_ulong();
+        char byte = 0;
+        for (int j = 7; j >= 0; j--, i++)
+            if (payload[i])
+                byte |= (1<<j);
+        bytes.push_back(byte);
+    }
+
+    std::string msg;
+    for (int i = 0; i < (int)bytes.size(); i++)
+    {
+        char byte = bytes[i];
         if (byte == ESC)
         {
             i++;
-            if (i >= payloadSize)
+            if (i >= (int)bytes.size())
+            {
+                std::cout<<"Error: There was an ESC without character at the end of the frame";
                 break;
-            byte = (char)frame->getPayload(i).to_ulong();
+            }
+            byte = bytes[i];
         }
-        finalPayload.push_back(byte);
+        msg.push_back(byte);
     }
-    for (int i = 0; i < (int)finalPayload.size(); i++)
-    {
-        frame->setPayload(i, finalPayload[i]);
-    }
-    return;
+    return msg;
 }
 
 void Node::modify_msg (Frame_Base* frame)
@@ -177,7 +192,7 @@ void Node::handleMessage(cMessage *msg)
         //Add parity and stuffing
         this->byte_stuff(next_frame);
         this->add_haming(next_frame);
-        //Kurrobt the msg
+        //corrupt the msg
         this->modify_msg(next_frame);
 
         this->messages_info.pop();
@@ -204,7 +219,7 @@ void Node::handleMessage(cMessage *msg)
 
         //error detect and correct
         this->error_detect_correct(msg_rcv);
-        this->byte_destuff(msg_rcv);
+        std::string receivedStr = this->byte_destuff(msg_rcv);
         //cout..
         std::cout <<"RSV: "<<this->getIndex()<< "\tReceived: "<<msg_rcv->getPayload(0)<<endl;
     }
