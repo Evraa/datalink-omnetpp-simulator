@@ -87,7 +87,7 @@ void Node::add_haming (Frame_Base* frame)
     /*
      * You got a frame that contains: [payload[64], parity, start/end, ACK, NACK]
      * Implement Hamming Code so that the parity bits are set appropriately
-     * Note that: Byte stuffing occures before hamming, so hamming takes care of that too.
+     * Note that: Byte stuffing occurs before hamming, so hamming takes care of that too.
      *            Since we have 512 bits MAX, parity bits Max is: 10
      *            Some payload characters: bitset <8>, will be zero padding, so you might wanna ignore these
      *            and accordingly ignore them when correcting.
@@ -104,16 +104,58 @@ bool Node::error_detect_correct (Frame_Base* frame)
     std::cout <<"Detected True\n";
     return true;
 }
+
 void Node::byte_stuff (Frame_Base* frame)
 {
-    std::cout <<"Added byte stuff.\n";
+    std::cout <<"Add byte stuffing.\n";
+    frame->setStart_flag(FLAG);
+    frame->setEnd_flag(FLAG);
+    std::vector<char>finalPayload;
+    for (int i = 0; i < (int)frame->getPayloadArraySize(); i++)
+    {
+        char byte = (char)frame->getPayload(i).to_ulong();
+        if (byte == FLAG || byte == ESC)
+            finalPayload.push_back(ESC);
+        finalPayload.push_back(byte);
+    }
+    for (int i = 0; i < (int)finalPayload.size(); i++)
+    {
+        frame->setPayload(i, finalPayload[i]);
+    }
     return;
 }
+
+void Node::byte_destuff (Frame_Base* frame)
+{
+    //TODO: may return the payload without the frame instead
+    std::cout <<"Remove byte stuffing.\n";
+
+    std::vector<char>finalPayload;
+    int payloadSize = frame->getPayloadArraySize();
+    for (int i = 0; i < payloadSize; i++)
+    {
+        char byte = (char)frame->getPayload(i).to_ulong();
+        if (byte == ESC)
+        {
+            i++;
+            if (i >= payloadSize)
+                break;
+            byte = (char)frame->getPayload(i).to_ulong();
+        }
+        finalPayload.push_back(byte);
+    }
+    for (int i = 0; i < (int)finalPayload.size(); i++)
+    {
+        frame->setPayload(i, finalPayload[i]);
+    }
+    return;
+}
+
 void Node::modify_msg (Frame_Base* frame)
 {
     /**
      * When Delaying you'll need send_delay() function
-     * When curropting you'll need some propabilistic paramters.
+     * When corrupting you'll need some propabilistic paramters.
      */
     std::cout <<"Message is Modified\n";
     return;
@@ -159,6 +201,7 @@ void Node::handleMessage(cMessage *msg)
 
         //error detect and correct
         this->error_detect_correct(msg_rcv);
+        this->byte_destuff(msg_rcv);
         //cout..
         std::cout <<"RSV: "<<this->getIndex()<< "\tReceived: "<<msg_rcv->getPayload(0)<<endl;
     }

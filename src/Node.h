@@ -33,6 +33,8 @@ class Node : public cSimpleModule
     //A public Q that contains pointers to tuples
     //each tuple has an int (receiver id) and a pointer to the Frame to be sent to.
     std::queue <std::tuple<int, Frame_Base*>* > messages_info;
+    const char FLAG = 1;
+    const char ESC = 2;
 
   protected:
     virtual void initialize();
@@ -41,6 +43,7 @@ class Node : public cSimpleModule
     virtual void handleMessage(cMessage *msg);              //Kareem
     virtual void modify_msg(Frame_Base *frame);             //Omar
     virtual void byte_stuff (Frame_Base* frame);            //Sayed
+    virtual void byte_destuff (Frame_Base* frame);          //Sayed
     virtual void add_haming (Frame_Base* frame);            //Sayed
     virtual bool error_detect_correct (Frame_Base* frame);  //Sayed
 };
