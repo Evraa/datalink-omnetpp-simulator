@@ -23,6 +23,9 @@
 #include <queue>
 #include <bitset>
 #include <vector>
+#include <random>
+#include <string.h>     //strncmp
+
 #include "frame_m.h"
 using namespace omnetpp;
 
@@ -36,12 +39,13 @@ class Node : public cSimpleModule
     std::queue <std::tuple<int, Frame_Base*>* > messages_info;
     const char FLAG = 1;
     const char ESC = 2;
+    std::queue <std::tuple<int, int, double>* > send_rcv;
 
   protected:
     virtual void initialize();
     virtual void schedule_self_msg();                               //Common
-    virtual void construct_msg_q();                                 //Ev
-
+    virtual void construct_msg_q();                                 //Evram
+    virtual void orchestrate_msgs();                                //Evram
     virtual void handleMessage(cMessage *msg);                      //Kareem
     virtual void  modify_msg(Frame_Base *frame);                     //Omar
     virtual Frame_Base* byte_stuff (const std::string& msg);        //Sayed

@@ -50,7 +50,9 @@ void doParsimUnpacking(omnetpp::cCommBuffer *buffer, std::vector<T,A>& v)
     doParsimUnpacking(buffer, n);
     v.resize(n);
     for (int i = 0; i < n; i++)
-        doParsimUnpacking(buffer, v[i]);
+        //Ev commented this!
+//        doParsimUnpacking(buffer, v[i]);
+        return;
 }
 
 // Packing/unpacking an std::list

@@ -7,11 +7,14 @@ import ned.IdealChannel;
 
 network Data_Link
 {
-//    These @display is GUI, don't bother
+    //    These @display is GUI, don't bother
     parameters:
         int N = default(8);
         @display("bgb=349,228;i=block/classifier2");
     submodules:
+        orchestrator: Node {
+            @display("i=misc/globe");
+        }
         nodes[N]: Node {
             @display("i=block/network2;is=n");
         }

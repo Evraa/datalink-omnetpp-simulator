@@ -18,53 +18,87 @@
 Define_Module(Node);
 
 void Node::construct_msg_q(){
-    //Open the file
-    std::ifstream myfile("../msgs/msgs.txt");
-    std::string line;
-    if (myfile.is_open())
-    {
-        while (!myfile.eof())
-        {
-            std::getline (myfile,line);
-            int my_id = std::stoi(line);
-            if (this->getIndex() == my_id)
-            {
-                std::cout <<"I am: "<<this->getIndex() <<"\tReading my msgs."<<endl;
-                std::getline (myfile,line);
-                int rcv_id = std::stoi(line);
-                std::getline (myfile,line);
-                //Construct a frame
-                Frame_Base* frame = new Frame_Base;
-                int k = 0;
-                for (std::string::size_type i = 0; i < line.size(); i++)
-                {
-                    std::bitset<8> *tmp = new std::bitset<8>(line[i]);
-                    frame->setPayload(k, (*tmp));
-                    k += 1;
-                }
-                //Add it to the uo_map.
-                std::tuple<int, Frame_Base*>* temp= new std::tuple<int, Frame_Base*>(rcv_id, frame);
-                this->messages_info.push(temp);
-            }
-            else
-            {
-                std::getline (myfile,line);
-                std::getline (myfile,line);
-            }
-        }
-        myfile.close();
-        std::cout <<"I am: "<<this->getIndex()<<"\tDone reading my msgs."<<endl;
-
-    }
-    else
-    {
-        std::cout <<"File ain't opened\nIt might not be created!\nAn error occured while opening!\n";
-        std::cout <<"PROGRAM SHALL ABORT\n";
-        std::exit(3);
-    }
-    return;
+    std::cout <<"Construct me\t"<<this->getName()<<endl;
+//    //Open the file
+//    std::ifstream myfile("../msgs/msgs.txt");
+//    std::string line;
+//    if (myfile.is_open())
+//    {
+//        while (!myfile.eof())
+//        {
+//            std::getline (myfile,line);
+//            int my_id = std::stoi(line);
+//            if (this->getIndex() == my_id)
+//            {
+//                std::cout <<"I am: "<<this->getIndex() <<"\tReading my msgs."<<endl;
+//                std::getline (myfile,line);
+//                int rcv_id = std::stoi(line);
+//                std::getline (myfile,line);
+//                //Construct a frame
+//                Frame_Base* frame = new Frame_Base;
+//                int k = 0;
+//                for (std::string::size_type i = 0; i < line.size(); i++)
+//                {
+//                    std::bitset<8> *tmp = new std::bitset<8>(line[i]);
+//                    frame->setPayload(k, (*tmp));
+//                    k += 1;
+//                }
+//                //Add it to the uo_map.
+//                std::tuple<int, Frame_Base*>* temp= new std::tuple<int, Frame_Base*>(rcv_id, frame);
+//                this->messages_info.push(temp);
+//            }
+//            else
+//            {
+//                std::getline (myfile,line);
+//                std::getline (myfile,line);
+//            }
+//        }
+//        myfile.close();
+//        std::cout <<"I am: "<<this->getIndex()<<"\tDone reading my msgs."<<endl;
+//
+//    }
+//    else
+//    {
+//        std::cout <<"File ain't opened\nIt might not be created!\nAn error occured while opening!\n";
+//        std::cout <<"PROGRAM SHALL ABORT\n";
+//        std::exit(3);
+//    }
+//    return;
 }
 
+
+void Node::orchestrate_msgs()
+{
+    int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
+    double lower_bound = 1;
+    double upper_bound = 10;
+    std::uniform_real_distribution<double> unif(lower_bound,upper_bound);
+    std::default_random_engine re;
+    for (int i=0; i<nodes_size*3; i++)
+    {
+        int rand_sender = uniform(0, nodes_size-1);    //rand -> 0:7
+        int rand_rcv = 0;
+        do{
+            rand_rcv = uniform(0, nodes_size-1);    //rand -> 0:7 != rand_sender "NO SELF MSGS"
+        } while(rand_rcv == rand_sender);
+
+        double when_to_send = unif(re);
+        std::tuple<int,int,double>* temp= new std::tuple<int, int,double>(rand_sender, rand_rcv, when_to_send);
+        this->send_rcv.push(temp);
+    }
+    int size = send_rcv.size();
+    for (int i=0; i<size; i++)
+    {
+        std::tuple<int, int, double>* tmpo = send_rcv.front();
+        send_rcv.pop();
+        int x = std::get<0>(*tmpo);
+        int y = std::get<1>(*tmpo);
+        double z = std::get<2>(*tmpo);
+        std::cout << x <<"\t"<<y<<"\t"<<z<<endl;
+    }
+
+    return;
+}
 void Node::schedule_self_msg()
 {
     double interval = exponential(1 / par("lambda").doubleValue());
@@ -74,8 +108,12 @@ void Node::schedule_self_msg()
 
 void Node::initialize()
 {
-    //First of all, read the msgs and their Senders.
-    construct_msg_q();
+
+    if (std::strcmp(this->getName(),"orchestrator") == 0)
+        orchestrate_msgs();
+    else
+//        construct_msg_q();
+        std::cout << "My name is:\t"<<this->getName()<<endl;
 
     //IDK if this needs to be here, it's up to Kareem.
     if (this->messages_info.size()>0)
@@ -180,49 +218,49 @@ void Node::modify_msg (Frame_Base* frame)
 
 void Node::handleMessage(cMessage *msg)
 {
-
-    if (msg->isSelfMessage() && this->messages_info.size()>0)
-    {
-        //Host wants to send a msg.
-        //Fetch Receiver id
-        int rcv_id = std::get<0>(*this->messages_info.front());
-        //Fetch The Frame
-        Frame_Base* next_frame = std::get<1>(*this->messages_info.front());
-
-        //Add parity and stuffing
-        this->byte_stuff(next_frame);
-        this->add_haming(next_frame);
-        //corrupt the msg
-        this->modify_msg(next_frame);
-
-        this->messages_info.pop();
-
-        //cout...
-//        std::cout <<"Host: "<<this->getIndex()<< "\tSending: "<<next_frame->getPayload(0) << "\tTo: "<<rcv_id<<endl;
-
-        //at what gate?
-        int dest_gate = rcv_id;
-        if (rcv_id > getIndex())
-            dest_gate--;
-
-        //send it..
-        send(next_frame, "outs", dest_gate);
-
-        //Still Got More?
-        if (this->messages_info.size()>0)
-            this->schedule_self_msg();
-    }
-    else
-    {
-        //This is a Receiving func.
-        Frame_Base* msg_rcv = check_and_cast<Frame_Base *> (msg);
-
-        //error detect and correct
-        this->error_detect_correct(msg_rcv);
-        std::string receivedStr = this->byte_destuff(msg_rcv);
-        //cout..
-        std::cout <<"RSV: "<<this->getIndex()<< "\tReceived: "<<msg_rcv->getPayload(0)<<endl;
-    }
+    return;
+//    if (msg->isSelfMessage() && this->messages_info.size()>0)
+//    {
+//        //Host wants to send a msg.
+//        //Fetch Receiver id
+//        int rcv_id = std::get<0>(*this->messages_info.front());
+//        //Fetch The Frame
+//        Frame_Base* next_frame = std::get<1>(*this->messages_info.front());
+//
+//        //Add parity and stuffing
+//        this->byte_stuff(next_frame);
+//        this->add_haming(next_frame);
+//        //corrupt the msg
+//        this->modify_msg(next_frame);
+//
+//        this->messages_info.pop();
+//
+//        //cout...
+////        std::cout <<"Host: "<<this->getIndex()<< "\tSending: "<<next_frame->getPayload(0) << "\tTo: "<<rcv_id<<endl;
+//
+//        //at what gate?
+//        int dest_gate = rcv_id;
+//        if (rcv_id > getIndex())
+//            dest_gate--;
+//
+//        //send it..
+//        send(next_frame, "outs", dest_gate);
+//
+//        //Still Got More?
+//        if (this->messages_info.size()>0)
+//            this->schedule_self_msg();
+//    }
+//    else
+//    {
+//        //This is a Receiving func.
+//        Frame_Base* msg_rcv = check_and_cast<Frame_Base *> (msg);
+//
+//        //error detect and correct
+//        this->error_detect_correct(msg_rcv);
+//        std::string receivedStr = this->byte_destuff(msg_rcv);
+//        //cout..
+//        std::cout <<"RSV: "<<this->getIndex()<< "\tReceived: "<<msg_rcv->getPayload(0)<<endl;
+//    }
 }
 
 
