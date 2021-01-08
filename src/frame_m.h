@@ -20,26 +20,19 @@
 
 // cplusplus {{
 //	Any includes goes here
-	#include <bitset>
-	typedef std::bitset<10> parity_bits;
-	typedef std::bitset<8> char_bits;
+	#include <vector>
+	typedef std::vector <bool> message_vec;
 // }}
 
 /**
- * Class generated from <tt>frame.msg:29</tt> by nedtool.
+ * Class generated from <tt>frame.msg:27</tt> by nedtool.
  * <pre>
  * packet Frame
  * {
  *     \@customize(true);  // see the generated C++ header for more info
- *     //max char count is 32, after byte stuffing, will be 64
- *     //in bits 256*2
- *     char_bits payload[64];	//max: 256 bits	.. min: 14 bits .. by Ev Definition and assumption.
- *     parity_bits parity; 		//max: 9 bits .. min: 5
+ *     message_vec payload;
  *     int ACK;
  *     int NACK;
- *     char_bits start_flag;
- *     char_bits end_flag;
- * 
  * }
  * </pre>
  *
@@ -70,12 +63,9 @@
 class Frame_Base : public ::omnetpp::cPacket
 {
   protected:
-    char_bits payload[64];
-    parity_bits parity;
+    message_vec payload;
     int ACK;
     int NACK;
-    char_bits start_flag;
-    char_bits end_flag;
 
   private:
     void copy(const Frame_Base& other);
@@ -91,28 +81,20 @@ class Frame_Base : public ::omnetpp::cPacket
   public:
     virtual ~Frame_Base();
     Frame_Base(const char *name=nullptr, short kind=0);
-    virtual Frame_Base *dup() const override {return new Frame_Base(*this);}
+    virtual Frame_Base *dup() const override {
+        return new Frame_Base(*this);
+       }
     virtual void parsimPack(omnetpp::cCommBuffer *b) const override;
     virtual void parsimUnpack(omnetpp::cCommBuffer *b) override;
 
     // field getter/setter methods
-    virtual unsigned int getPayloadArraySize() const;
-    virtual char_bits& getPayload(unsigned int k);
-    virtual const char_bits& getPayload(unsigned int k) const {return const_cast<Frame_Base*>(this)->getPayload(k);}
-    virtual void setPayload(unsigned int k, const char_bits& payload);
-    virtual parity_bits& getParity();
-    virtual const parity_bits& getParity() const {return const_cast<Frame_Base*>(this)->getParity();}
-    virtual void setParity(const parity_bits& parity);
+    virtual message_vec& getPayload();
+    virtual const message_vec& getPayload() const {return const_cast<Frame_Base*>(this)->getPayload();}
+    virtual void setPayload(const message_vec& payload);
     virtual int getACK() const;
     virtual void setACK(int ACK);
     virtual int getNACK() const;
     virtual void setNACK(int NACK);
-    virtual char_bits& getStart_flag();
-    virtual const char_bits& getStart_flag() const {return const_cast<Frame_Base*>(this)->getStart_flag();}
-    virtual void setStart_flag(const char_bits& start_flag);
-    virtual char_bits& getEnd_flag();
-    virtual const char_bits& getEnd_flag() const {return const_cast<Frame_Base*>(this)->getEnd_flag();}
-    virtual void setEnd_flag(const char_bits& end_flag);
 };
 
 

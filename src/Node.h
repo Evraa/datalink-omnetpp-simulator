@@ -21,7 +21,8 @@
 #include <string>
 #include <tuple>
 #include <queue>
-#include <bitset>
+//#include <bitset>
+#include <vector>
 #include "frame_m.h"
 using namespace omnetpp;
 
@@ -40,8 +41,9 @@ class Node : public cSimpleModule
     virtual void initialize();
     virtual void schedule_self_msg();                       //Common
     virtual void construct_msg_q();                         //Ev
+
     virtual void handleMessage(cMessage *msg);              //Kareem
-    virtual void modify_msg(Frame_Base *frame);             //Omar
+    virtual int  modify_msg(Frame_Base *frame);             //Omar
     virtual void byte_stuff (Frame_Base* frame);            //Sayed
     virtual void byte_destuff (Frame_Base* frame);          //Sayed
     virtual void add_haming (Frame_Base* frame);            //Sayed

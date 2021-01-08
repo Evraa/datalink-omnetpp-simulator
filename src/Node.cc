@@ -157,7 +157,9 @@ void Node::modify_msg (Frame_Base* frame)
      * When Delaying you'll need send_delay() function
      * When corrupting you'll need some propabilistic paramters.
      */
+
     std::cout <<"Message is Modified\n";
+
     return;
 }
 
@@ -171,16 +173,17 @@ void Node::handleMessage(cMessage *msg)
         int rcv_id = std::get<0>(*this->messages_info.front());
         //Fetch The Frame
         Frame_Base* next_frame = std::get<1>(*this->messages_info.front());
-        this->messages_info.pop();
 
         //Add parity and stuffing
         this->byte_stuff(next_frame);
         this->add_haming(next_frame);
-        //Curropt the msg
+        //Kurrobt the msg
         this->modify_msg(next_frame);
 
+        this->messages_info.pop();
+
         //cout...
-        std::cout <<"Host: "<<this->getIndex()<< "\tSending: "<<next_frame->getPayload(0) << "\tTo: "<<rcv_id<<endl;
+//        std::cout <<"Host: "<<this->getIndex()<< "\tSending: "<<next_frame->getPayload(0) << "\tTo: "<<rcv_id<<endl;
 
         //at what gate?
         int dest_gate = rcv_id;

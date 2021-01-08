@@ -18,23 +18,15 @@
 //
 cplusplus {{
 //	Any includes goes here
-	#include <bitset>
-	typedef std::bitset<10> parity_bits;
-	typedef std::bitset<8> char_bits;
+	#include <vector>
+	typedef std::vector <bool> message_vec;
 }}
-class noncobject parity_bits;
-class noncobject char_bits; 
+class noncobject message_vec;
 
 
 packet Frame {
     @customize(true);  // see the generated C++ header for more info
-    //max char count is 32, after byte stuffing, will be 64
-    //in bits 256*2
-    char_bits payload [64];	//max: 256 bits	.. min: 14 bits .. by Ev Definition and assumption.
-    parity_bits parity; 		//max: 10 bits .. min: 5
+    message_vec payload;
     int ACK;
     int NACK;
-    char_bits start_flag;
-    char_bits end_flag;
-    
 }
