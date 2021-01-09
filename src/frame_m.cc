@@ -496,5 +496,3 @@ void *FrameDescriptor::getFieldStructValuePointer(void *object, int field, int i
         default: return nullptr;
     }
 }
-
-

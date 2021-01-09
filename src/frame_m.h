@@ -19,9 +19,9 @@
 
 
 // cplusplus {{
-//	Any includes goes here
-	#include <vector>
-	typedef std::vector <bool> message_vec;
+//  Any includes goes here
+    #include <vector>
+    typedef std::vector <bool> message_vec;
 // }}
 
 /**
@@ -44,7 +44,6 @@
  * {
  *   private:
  *     void copy(const Frame& other) { ... }
-
  *   public:
  *     Frame(const char *name=nullptr, short kind=0) : Frame_Base(name,kind) {}
  *     Frame(const Frame& other) : Frame_Base(other) {copy(other);}
@@ -97,4 +96,3 @@ class Frame_Base : public ::omnetpp::cPacket
 
 
 #endif // ifndef __FRAME_M_H
-

@@ -51,6 +51,9 @@ class Node : public cSimpleModule
     virtual void schedule_self_msg(int line_index);                 //Common
     virtual void handleMessage(cMessage *msg);                      //Kareem
     virtual void modify_msg(Frame_Base *frame);                     //Omar
+    virtual bool delay_msg(double &delayed_time);                   //Omar
+    virtual bool loss_msg();                                        //Omar
+    virtual bool dup_msg();                                         //Omar
     virtual std::string byte_destuff (Frame_Base* frame);           //Sayed
     virtual bool error_detect_correct (Frame_Base* frame);          //Sayed
 };

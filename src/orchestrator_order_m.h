@@ -19,9 +19,9 @@
 
 
 // cplusplus {{
-//	Any includes goes here
-	#include <string>
-	typedef std::string message_str;
+//  Any includes goes here
+    #include <string>
+    typedef std::string message_str;
 // }}
 
 /**
@@ -45,7 +45,6 @@
  * {
  *   private:
  *     void copy(const Orchestrator_order& other) { ... }
-
  *   public:
  *     Orchestrator_order(const char *name=nullptr, short kind=0) : Orchestrator_order_Base(name,kind) {}
  *     Orchestrator_order(const Orchestrator_order& other) : Orchestrator_order_Base(other) {copy(other);}
@@ -101,4 +100,3 @@ class Orchestrator_order_Base : public ::omnetpp::cPacket
 
 
 #endif // ifndef __ORCHESTRATOR_ORDER_M_H
-

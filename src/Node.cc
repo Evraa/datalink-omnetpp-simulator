@@ -231,42 +231,110 @@ std::string Node::byte_destuff (Frame_Base* frame)
 void Node::modify_msg (Frame_Base* frame)
 {
     /**
-     * When Delaying you'll need send_delay() function
-     * When corrupting you'll need some probabilistic parameters.
-     */
+         * Corrupting msg follows bernoulli trails to check if corruption will be performed or not
+         * since the events are all equally probable so:
+             * The generated random number follows uniform distribution
+             * The corruption itself follows uniform distribution
+             * The Corrupted index(bit) in the payload follows uniform distribution
+         */
 
-    std::cout <<"Message is Modified\n";
+        double rand_corrupt = uniform(0,1);
+//        double p_corrupt = par("p_corrupt").doubleValue();
+        double p_corrupt = 0.7;
+        if(rand_corrupt < p_corrupt )
+        {
+            int payloadSize = frame->getPayload().size();
+            if(payloadSize)
+            {
+                int rand_corrupt_index = uniform(0,1)*payloadSize;
+                std::cout<<"index = "<<rand_corrupt_index<<endl;
+                message_vec modified_msg = frame->getPayload();
+                modified_msg[rand_corrupt_index] = ~modified_msg[rand_corrupt_index];
+                frame->setPayload(modified_msg);
+            }
+        }
 
-    return;
+
+
+
+        return;
+    }
+
+    bool Node::delay_msg (double& delayedTime)
+    {
+        /*
+         * Delaying msg using bernoulli distribution
+         * */
+        double rand_delay = uniform(0,1);
+    //        double p_delay = par("p_delay").doubleValue();
+        double p_delay = 0.6;
+
+        if(rand_delay < p_delay )
+        {
+            //        double rand_delay = uniform(0,1)*par("delay_range").doubleValue();
+            delayedTime = rand_delay;
+            return true;
+        }
+        delayedTime = 0;
+        return false;
+    }
+
+    bool Node::loss_msg ()
+    {
+        /*
+         * losing msg using bernoulli distribution
+         * */
+        double rand_loss = uniform(0,1);
+    //        double p_loss = par("p_loss").doubleValue();
+        double p_loss = 0.6;
+
+        if(rand_loss < p_loss )
+            return true;
+        return false;
+    }
+
+    bool Node::dup_msg ()
+    {
+        /*
+         * duplicating msg using bernoulli distribution
+         * */
+        double rand_dup = uniform(0,1);
+    //        double p_dup = par("p_dup").doubleValue();
+        double p_dup = 0.65;
+
+        if(rand_dup < p_dup )
+            return true;
+        return false;
+    }
+
+    void Node::buffer_msg (cMessage *msg)
+    {
+        //A regular node received an order from orchestrator.
+        Orchestrator_order_Base* order_rcv = check_and_cast<Orchestrator_order_Base *> (msg);
+        //Sanity check
+        assert(order_rcv->getSender_id() == this->getIndex());
+        //Message info.
+        int rcv_id = order_rcv->getRecv_id();
+        int dest_gate = rcv_id;
+        if (rcv_id > getIndex())
+            dest_gate--;
+        double interval = order_rcv->getInterval();
+        std::string message_to_frame = order_rcv->getMessage_body();
+
+        //stuff the message
+        Frame_Base* msg_frame = this->byte_stuff(message_to_frame);
+        //add hamming
+        this->add_haming(msg_frame);
+        //add a tuple for my new message                                                    //PS. I added direct dest gate.
+        std::tuple<int, double, Frame_Base*>* temp= new std::tuple<int, double, Frame_Base*>(dest_gate, interval, msg_frame);
+        //buffer the message
+        this->messages_info.push(temp);
+        std::cout <<"Current SimTime:\t"<<simTime()<<endl;
+        std::cout <<"Node:\t"<<this->getIndex()<<"\tScheduled the message:\t"<<message_to_frame<<endl;
+        std::cout <<"To be Sent to:\t"<<rcv_id<<"\tAfter:\t"<<interval<<endl;
+        return;
 }
 
-void Node::buffer_msg (cMessage *msg)
-{
-    //A regular node received an order from orchestrator.
-    Orchestrator_order_Base* order_rcv = check_and_cast<Orchestrator_order_Base *> (msg);
-    //Sanity check
-    assert(order_rcv->getSender_id() == this->getIndex());
-    //Message info.
-    int rcv_id = order_rcv->getRecv_id();
-    int dest_gate = rcv_id;
-    if (rcv_id > getIndex())
-        dest_gate--;
-    double interval = order_rcv->getInterval();
-    std::string message_to_frame = order_rcv->getMessage_body();
-
-    //stuff the message
-    Frame_Base* msg_frame = this->byte_stuff(message_to_frame);
-    //add hamming
-    this->add_haming(msg_frame);
-    //add a tuple for my new message                                                    //PS. I added direct dest gate.
-    std::tuple<int, double, Frame_Base*>* temp= new std::tuple<int, double, Frame_Base*>(dest_gate, interval, msg_frame);
-    //buffer the message
-    this->messages_info.push(temp);
-    std::cout <<"Current SimTime:\t"<<simTime()<<endl;
-    std::cout <<"Node:\t"<<this->getIndex()<<"\tScheduled the message:\t"<<message_to_frame<<endl;
-    std::cout <<"To be Sent to:\t"<<rcv_id<<"\tAfter:\t"<<interval<<endl;
-    return;
-}
 
 void Node::handleMessage(cMessage *msg)
 {
@@ -286,7 +354,22 @@ void Node::handleMessage(cMessage *msg)
             buffer_msg (msg);
 
             //To modify a frame
-            //this->modify_msg(next_frame);
+            Frame_Base* test = new Frame_Base;
+            std::vector<bool>a;
+            for(int i=0;i<10;i++)
+                a.push_back(false);
+            test->setPayload(a);
+            for(int i=0;i<10;i++)
+            {
+                std::cout<<test->getPayload()[i];
+            }
+            std::cout<<endl;
+            this->modify_msg(test);
+
+            for(int i=0;i<10;i++)
+            {
+                std::cout<<test->getPayload()[i];
+            }
 
             //To duplicate a frame
             //leave it at the messages_info Q., hamming is already added, Kareem needs to check..IMP
