@@ -33,8 +33,6 @@
  *     message_vec payload;
  *     int ACK;
  *     int NACK;
- *     int RCV;
- *     double DURATION;
  * }
  * </pre>
  *
@@ -68,8 +66,6 @@ class Frame_Base : public ::omnetpp::cPacket
     message_vec payload;
     int ACK;
     int NACK;
-    int RCV;
-    double DURATION;
 
   private:
     void copy(const Frame_Base& other);
@@ -84,8 +80,8 @@ class Frame_Base : public ::omnetpp::cPacket
 
   public:
     virtual ~Frame_Base();
-    Frame_Base(const char *name=nullptr, short kind=0);
     virtual Frame_Base *dup() const override {return new Frame_Base(*this);}
+    Frame_Base(const char *name=nullptr, short kind=0);
     virtual void parsimPack(omnetpp::cCommBuffer *b) const override;
     virtual void parsimUnpack(omnetpp::cCommBuffer *b) override;
 
@@ -97,10 +93,6 @@ class Frame_Base : public ::omnetpp::cPacket
     virtual void setACK(int ACK);
     virtual int getNACK() const;
     virtual void setNACK(int NACK);
-    virtual int getRCV() const;
-    virtual void setRCV(int RCV);
-    virtual double getDURATION() const;
-    virtual void setDURATION(double DURATION);
 };
 
 

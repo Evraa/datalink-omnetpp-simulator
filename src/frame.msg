@@ -29,6 +29,4 @@ packet Frame {
     message_vec payload;
     int ACK;
     int NACK;
-    int RCV;
-    double DURATION;
 }
