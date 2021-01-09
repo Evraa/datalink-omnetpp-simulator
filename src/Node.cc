@@ -354,22 +354,7 @@ void Node::handleMessage(cMessage *msg)
             buffer_msg (msg);
 
             //To modify a frame
-            Frame_Base* test = new Frame_Base;
-            std::vector<bool>a;
-            for(int i=0;i<10;i++)
-                a.push_back(false);
-            test->setPayload(a);
-            for(int i=0;i<10;i++)
-            {
-                std::cout<<test->getPayload()[i];
-            }
-            std::cout<<endl;
-            this->modify_msg(test);
 
-            for(int i=0;i<10;i++)
-            {
-                std::cout<<test->getPayload()[i];
-            }
 
             //To duplicate a frame
             //leave it at the messages_info Q., hamming is already added, Kareem needs to check..IMP
