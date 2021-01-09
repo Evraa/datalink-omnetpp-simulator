@@ -3,4 +3,4 @@ simulations
 .qtenvrc
 data_link_dbg*
 .settings/language.settings.xml
-.vscode/c_cpp_properties.json
+.vscode

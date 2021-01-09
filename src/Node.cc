@@ -101,25 +101,70 @@ void Node::initialize()
 
 void Node::add_haming (Frame_Base* frame)
 {
-    /*
-     * You got a frame that contains: [payload[64], parity, start/end, ACK, NACK]
-     * Implement Hamming Code so that the parity bits are set appropriately
-     * Note that: Byte stuffing occurs before hamming, so hamming takes care of that too.
-     *            Since we have 512 bits MAX, parity bits Max is: 10
-     *            Some payload characters: bitset <8>, will be zero padding, so you might wanna ignore these
-     *            and accordingly ignore them when correcting.
-     * */
-    //EX:
-//    std::cout <<"Added Parity bits\n";
-//    std::bitset<10>* bits = new std::bitset<10>;
-//    (*bits) = 011110011;
-//    frame->setParity((*bits));
-    return;
+    std::cout<<"Add hamming\n"<<endl;
+    std::vector<bool> payload = frame->getPayload();
+    int m = payload.size();
+    int r = 0;
+    while ((1<<r) < r+m+1)
+        r++;
+    std::vector<bool> hamming(r+m+1);
+    for (int i = 1, j = 0; i <= r+m; i++)
+    {
+        // if i not a power of 2
+        // (number of ones in binary representation of i not equal one)
+        if(__builtin_popcount(i) != 1)
+            hamming[i] = payload[j++];
+    }
+    for (int i = 0; i < r; i++)
+    {
+        int num = (1<<i);
+        for (int j = num+1; j <= r+m; j++)
+        {
+            if (j&num)
+                hamming[num] = hamming[num] ^ hamming[j];
+        }
+    }
+    frame->setPayload(hamming);
 }
+
 bool Node::error_detect_correct (Frame_Base* frame)
 {
-    std::cout <<"Detected True\n";
-    return true;
+    std::vector<bool> payload = frame->getPayload();
+    int z = payload.size();
+    int r = ceil(log2(z));
+    int m = z-r-1;
+    int errorBit = 0;
+    for (int i = 0; i < r; i++)
+    {
+        int num = (1<<i);
+        bool parity = payload[num];
+        for (int j = num+1; j <= r+m; j++)
+        {
+            if (j&num)
+                parity ^= payload[j];
+        }
+        if (parity)
+            errorBit |= num;
+    }
+    if (errorBit)
+    {
+        payload[errorBit] = payload[errorBit] ^ 1;
+        std::cout<<"Error detected at bit "<<errorBit<<" and corrected\n";
+    }
+    else
+        std::cout<<"There was no error detected in the frame\n";
+
+    std::vector<bool> finalPayload(m);
+    for (int i = 3, j = 0; i <= r+m; i++)
+    {
+        if (__builtin_popcount(i) != 1)
+            finalPayload[j++] = payload[i];
+    }
+
+    frame->setPayload(finalPayload);
+    if (errorBit)
+        return true;
+    return false;
 }
 
 Frame_Base* Node::byte_stuff (const std::string& msg)
@@ -187,7 +232,7 @@ void Node::modify_msg (Frame_Base* frame)
 {
     /**
      * When Delaying you'll need send_delay() function
-     * When corrupting you'll need some propabilistic paramters.
+     * When corrupting you'll need some probabilistic parameters.
      */
 
     std::cout <<"Message is Modified\n";
