@@ -15,56 +15,7 @@
 
 #include "Node.h"
 
-Define_Module(Node);
-
-void Node::construct_msg_q(){
-    std::cout <<"Construct me\t"<<this->getName()<<endl;
-//    //Open the file
-//    std::ifstream myfile("../msgs/msgs.txt");
-//    std::string line;
-//    if (myfile.is_open())
-//    {
-//        while (!myfile.eof())
-//        {
-//            std::getline (myfile,line);
-//            int my_id = std::stoi(line);
-//            if (this->getIndex() == my_id)
-//            {
-//                std::cout <<"I am: "<<this->getIndex() <<"\tReading my msgs."<<endl;
-//                std::getline (myfile,line);
-//                int rcv_id = std::stoi(line);
-//                std::getline (myfile,line);
-//                //Construct a frame
-//                Frame_Base* frame = new Frame_Base;
-//                int k = 0;
-//                for (std::string::size_type i = 0; i < line.size(); i++)
-//                {
-//                    std::bitset<8> *tmp = new std::bitset<8>(line[i]);
-//                    frame->setPayload(k, (*tmp));
-//                    k += 1;
-//                }
-//                //Add it to the uo_map.
-//                std::tuple<int, Frame_Base*>* temp= new std::tuple<int, Frame_Base*>(rcv_id, frame);
-//                this->messages_info.push(temp);
-//            }
-//            else
-//            {
-//                std::getline (myfile,line);
-//                std::getline (myfile,line);
-//            }
-//        }
-//        myfile.close();
-//        std::cout <<"I am: "<<this->getIndex()<<"\tDone reading my msgs."<<endl;
-//
-//    }
-//    else
-//    {
-//        std::cout <<"File ain't opened\nIt might not be created!\nAn error occured while opening!\n";
-//        std::cout <<"PROGRAM SHALL ABORT\n";
-//        std::exit(3);
-//    }
-//    return;
-}
+Define_Module(Node); 
 
 
 void Node::orchestrate_msgs(int line_index)
@@ -86,7 +37,7 @@ void Node::orchestrate_msgs(int line_index)
     int rand_rcv = 0;
     do{
         rand_rcv = uniform(0, nodes_size);    //rand -> 0:7 != rand_sender "NO SELF MSGS"
-    } while(rand_rcv == rand_sender && this->last_one == rand_rcv);
+    } while(rand_rcv == rand_sender || (nodes_size!=2 && this->last_one == rand_rcv));
 
     //When to send this message?
 //    double sim_time =  simTime().dbl();
