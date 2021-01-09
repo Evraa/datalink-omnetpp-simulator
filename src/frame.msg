@@ -28,5 +28,5 @@ packet Frame {
     @customize(true);  // see the generated C++ header for more info
     message_vec payload;
     int ACK;
-    int NACK;
+//    int NACK;
 }
