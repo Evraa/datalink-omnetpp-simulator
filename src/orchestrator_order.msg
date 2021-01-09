@@ -18,17 +18,14 @@
 //
 cplusplus {{
 //	Any includes goes here
-	#include <vector>
-	typedef std::vector <bool> message_vec;
+	#include <string>
+	typedef std::string message_str;
 }}
-class noncobject message_vec;
-
-
-packet Frame {
+class noncobject message_str;
+packet Orchestrator_order {
     @customize(true);  // see the generated C++ header for more info
-    message_vec payload;
-    int ACK;
-    int NACK;
-    int RCV;
-    double DURATION;
+    int sender_id;
+    int recv_id;
+    double interval;
+    message_str message_body;
 }

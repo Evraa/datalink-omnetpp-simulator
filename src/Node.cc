@@ -67,57 +67,85 @@ void Node::construct_msg_q(){
 }
 
 
-void Node::orchestrate_msgs()
+void Node::orchestrate_msgs(int line_index)
 {
+    //convert string -> vector of bits
+    Orchestrator_order_Base* order_i = new Orchestrator_order_Base();
+
+    //Construct Sender, Receiver and time to send.
+    //Parameters
     int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
-    double lower_bound = 1;
-    double upper_bound = 10;
+    double lower_bound = 2;
+    double upper_bound = getParentModule()->par("arrival_time").doubleValue();  //eg. 20s
+
     std::uniform_real_distribution<double> unif(lower_bound,upper_bound);
     std::default_random_engine re;
-    for (int i=0; i<nodes_size*3; i++)
-    {
-        int rand_sender = uniform(0, nodes_size-1);    //rand -> 0:7
-        int rand_rcv = 0;
-        do{
-            rand_rcv = uniform(0, nodes_size-1);    //rand -> 0:7 != rand_sender "NO SELF MSGS"
-        } while(rand_rcv == rand_sender);
 
-        double when_to_send = unif(re);
-        std::tuple<int,int,double>* temp= new std::tuple<int, int,double>(rand_sender, rand_rcv, when_to_send);
-        this->send_rcv.push(temp);
-    }
-    int size = send_rcv.size();
-    for (int i=0; i<size; i++)
-    {
-        std::tuple<int, int, double>* tmpo = send_rcv.front();
-        send_rcv.pop();
-        int x = std::get<0>(*tmpo);
-        int y = std::get<1>(*tmpo);
-        double z = std::get<2>(*tmpo);
-        std::cout << x <<"\t"<<y<<"\t"<<z<<endl;
-    }
+    //Assign Random with constraints
+    int rand_sender = uniform(0, nodes_size);    //rand -> 0:7
+    int rand_rcv = 0;
+    do{
+        rand_rcv = uniform(0, nodes_size);    //rand -> 0:7 != rand_sender "NO SELF MSGS"
+    } while(rand_rcv == rand_sender && this->last_one == rand_rcv);
 
+    //When to send this message?
+//    double sim_time =  simTime().dbl();
+//    double when_to_send = unif(re) + sim_time;
+    double when_to_send = exponential(1 / par("lambda").doubleValue());
+
+    //Fetch Message from file with rounding
+    std::ifstream myfile("../msgs/msgs.txt");
+    std::string line;
+    if (myfile.is_open())
+    {
+        int loop_mod = line_index % 1000;   //1000 is the max message lines we might have
+        for (int i=0; i<loop_mod; i++)
+        {
+            std::getline (myfile,line);
+
+            //wrap around
+            if (myfile.eof())
+            {
+                myfile.close();
+                myfile.open("../msgs/msgs.txt");
+            }
+        }
+    }
+    else
+        std::cout <<"An error occured, Can't find the msgs. file!!"<<endl;
+
+    order_i->setSender_id(rand_sender);
+    order_i->setRecv_id(rand_rcv);
+    order_i->setMessage_body(line);
+    order_i->setInterval(when_to_send);
+    //to avoid two messages at the same time.
+    this->last_one = rand_rcv;
+
+    //send it to rand_sender
+    send(order_i, "outs", rand_sender);
     return;
 }
-void Node::schedule_self_msg()
+void Node::schedule_self_msg(int line_index)
 {
+    if (strcmp(this->getName(), "orchestrator")!=0)
+        return;
+
+    this->last_one = 0;
+    Orchestrator_order_Base* tmp = new Orchestrator_order_Base();
+    tmp->setKind(line_index);
+
     double interval = exponential(1 / par("lambda").doubleValue());
-    EV << ". Scheduled a new packet after " << interval << "s";
-    scheduleAt(simTime() + interval, new Frame_Base());
+    scheduleAt(simTime() + interval, tmp);
 }
 
 void Node::initialize()
 {
 
     if (std::strcmp(this->getName(),"orchestrator") == 0)
-        orchestrate_msgs();
+        schedule_self_msg(1);
     else
-//        construct_msg_q();
-        std::cout << "My name is:\t"<<this->getName()<<endl;
+        std::cout << "My name is:\t"<<this->getName() <<"\tMy id is:\t"<<this->getIndex()<<"\tI am awake!"<<endl;
 
-    //IDK if this needs to be here, it's up to Kareem.
-    if (this->messages_info.size()>0)
-        this->schedule_self_msg();
 }
 
 void Node::add_haming (Frame_Base* frame)
@@ -216,51 +244,73 @@ void Node::modify_msg (Frame_Base* frame)
     return;
 }
 
+void Node::buffer_msg (cMessage *msg)
+{
+    //A regular node received an order from orchestrator.
+    Orchestrator_order_Base* order_rcv = check_and_cast<Orchestrator_order_Base *> (msg);
+    //Sanity check
+    assert(order_rcv->getSender_id() == this->getIndex());
+    //Message info.
+    int rcv_id = order_rcv->getRecv_id();
+    int dest_gate = rcv_id;
+    if (rcv_id > getIndex())
+        dest_gate--;
+    double interval = order_rcv->getInterval();
+    std::string message_to_frame = order_rcv->getMessage_body();
+
+    //stuff the message
+    Frame_Base* msg_frame = this->byte_stuff(message_to_frame);
+    //add hamming
+    this->add_haming(msg_frame);
+    //add a tuple for my new message                                                    //PS. I added direct dest gate.
+    std::tuple<int, double, Frame_Base*>* temp= new std::tuple<int, double, Frame_Base*>(dest_gate, interval, msg_frame);
+    //buffer the message
+    this->messages_info.push(temp);
+    std::cout <<"Current SimTime:\t"<<simTime()<<endl;
+    std::cout <<"Node:\t"<<this->getIndex()<<"\tScheduled the message:\t"<<message_to_frame<<endl;
+    std::cout <<"To be Sent to:\t"<<rcv_id<<"\tAfter:\t"<<interval<<endl;
+    return;
+}
+
 void Node::handleMessage(cMessage *msg)
 {
-    return;
-//    if (msg->isSelfMessage() && this->messages_info.size()>0)
-//    {
-//        //Host wants to send a msg.
-//        //Fetch Receiver id
-//        int rcv_id = std::get<0>(*this->messages_info.front());
-//        //Fetch The Frame
-//        Frame_Base* next_frame = std::get<1>(*this->messages_info.front());
-//
-//        //Add parity and stuffing
-//        this->byte_stuff(next_frame);
-//        this->add_haming(next_frame);
-//        //corrupt the msg
-//        this->modify_msg(next_frame);
-//
-//        this->messages_info.pop();
-//
-//        //cout...
-////        std::cout <<"Host: "<<this->getIndex()<< "\tSending: "<<next_frame->getPayload(0) << "\tTo: "<<rcv_id<<endl;
-//
-//        //at what gate?
-//        int dest_gate = rcv_id;
-//        if (rcv_id > getIndex())
-//            dest_gate--;
-//
-//        //send it..
-//        send(next_frame, "outs", dest_gate);
-//
-//        //Still Got More?
-//        if (this->messages_info.size()>0)
-//            this->schedule_self_msg();
-//    }
-//    else
-//    {
-//        //This is a Receiving func.
-//        Frame_Base* msg_rcv = check_and_cast<Frame_Base *> (msg);
-//
-//        //error detect and correct
-//        this->error_detect_correct(msg_rcv);
-//        std::string receivedStr = this->byte_destuff(msg_rcv);
-//        //cout..
-//        std::cout <<"RSV: "<<this->getIndex()<< "\tReceived: "<<msg_rcv->getPayload(0)<<endl;
-//    }
+    if (std::strcmp(this->getName(),"orchestrator") == 0)
+    {
+        Orchestrator_order_Base* msg_rcv = check_and_cast<Orchestrator_order_Base *> (msg);
+        orchestrate_msgs(msg_rcv->getKind());
+        this->schedule_self_msg(msg_rcv->getKind()+1);
+        return;
+    }
+    else
+    {
+        //Regular Node
+        if (strcmp(msg->getSenderModule()->getName(), "orchestrator")==0)
+        {
+            //Add the ordered message to the buffer of messages to be sent.
+            buffer_msg (msg);
+
+            //To modify a frame
+            //this->modify_msg(next_frame);
+
+            //To duplicate a frame
+            //leave it at the messages_info Q., hamming is already added, Kareem needs to check..IMP
+
+            //To send a message
+            //Frame_Base* tmp = std::get<0>(*this->messages_info.front());
+            //int rcv_id = std::get<0>(*this->messages_info.front());
+            //double interval = std::get<0>(*this->messages_info.front());
+            //send(next_frame, "outs", dest_gate);
+
+            //Here lies the sending logic..
+
+         }
+        else
+        {
+            //here is the receiving logic
+            return;
+        }
+    }
+
 }
 
 

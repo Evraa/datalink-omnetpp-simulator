@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by nedtool 5.6 from frame.msg.
+// Generated file, do not edit! Created by nedtool 5.6 from orchestrator_order.msg.
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:
@@ -26,7 +26,7 @@
 
 #include <iostream>
 #include <sstream>
-#include "frame_m.h"
+#include "orchestrator_order_m.h"
 
 namespace omnetpp {
 
@@ -50,8 +50,7 @@ void doParsimUnpacking(omnetpp::cCommBuffer *buffer, std::vector<T,A>& v)
     doParsimUnpacking(buffer, n);
     v.resize(n);
     for (int i = 0; i < n; i++)
-        return;
-//        doParsimUnpacking(buffer, v[i]);
+        doParsimUnpacking(buffer, v[i]);
 }
 
 // Packing/unpacking an std::list
@@ -178,24 +177,23 @@ inline std::ostream& operator<<(std::ostream& out, const std::vector<T,A>& vec)
     return out;
 }
 
-Frame_Base::Frame_Base(const char *name, short kind) : ::omnetpp::cPacket(name,kind)
+Orchestrator_order_Base::Orchestrator_order_Base(const char *name, short kind) : ::omnetpp::cPacket(name,kind)
 {
-    this->ACK = 0;
-    this->NACK = 0;
-    this->RCV = 0;
-    this->DURATION = 0;
+    this->sender_id = 0;
+    this->recv_id = 0;
+    this->interval = 0;
 }
 
-Frame_Base::Frame_Base(const Frame_Base& other) : ::omnetpp::cPacket(other)
+Orchestrator_order_Base::Orchestrator_order_Base(const Orchestrator_order_Base& other) : ::omnetpp::cPacket(other)
 {
     copy(other);
 }
 
-Frame_Base::~Frame_Base()
+Orchestrator_order_Base::~Orchestrator_order_Base()
 {
 }
 
-Frame_Base& Frame_Base::operator=(const Frame_Base& other)
+Orchestrator_order_Base& Orchestrator_order_Base::operator=(const Orchestrator_order_Base& other)
 {
     if (this==&other) return *this;
     ::omnetpp::cPacket::operator=(other);
@@ -203,92 +201,79 @@ Frame_Base& Frame_Base::operator=(const Frame_Base& other)
     return *this;
 }
 
-void Frame_Base::copy(const Frame_Base& other)
+void Orchestrator_order_Base::copy(const Orchestrator_order_Base& other)
 {
-    this->payload = other.payload;
-    this->ACK = other.ACK;
-    this->NACK = other.NACK;
-    this->RCV = other.RCV;
-    this->DURATION = other.DURATION;
+    this->sender_id = other.sender_id;
+    this->recv_id = other.recv_id;
+    this->interval = other.interval;
+    this->message_body = other.message_body;
 }
 
-void Frame_Base::parsimPack(omnetpp::cCommBuffer *b) const
+void Orchestrator_order_Base::parsimPack(omnetpp::cCommBuffer *b) const
 {
     ::omnetpp::cPacket::parsimPack(b);
-    doParsimPacking(b,this->payload);
-    doParsimPacking(b,this->ACK);
-    doParsimPacking(b,this->NACK);
-    doParsimPacking(b,this->RCV);
-    doParsimPacking(b,this->DURATION);
+    doParsimPacking(b,this->sender_id);
+    doParsimPacking(b,this->recv_id);
+    doParsimPacking(b,this->interval);
+    doParsimPacking(b,this->message_body);
 }
 
-void Frame_Base::parsimUnpack(omnetpp::cCommBuffer *b)
+void Orchestrator_order_Base::parsimUnpack(omnetpp::cCommBuffer *b)
 {
     ::omnetpp::cPacket::parsimUnpack(b);
-    doParsimUnpacking(b,this->payload);
-    doParsimUnpacking(b,this->ACK);
-    doParsimUnpacking(b,this->NACK);
-    doParsimUnpacking(b,this->RCV);
-    doParsimUnpacking(b,this->DURATION);
+    doParsimUnpacking(b,this->sender_id);
+    doParsimUnpacking(b,this->recv_id);
+    doParsimUnpacking(b,this->interval);
+    doParsimUnpacking(b,this->message_body);
 }
 
-message_vec& Frame_Base::getPayload()
+int Orchestrator_order_Base::getSender_id() const
 {
-    return this->payload;
+    return this->sender_id;
 }
 
-void Frame_Base::setPayload(const message_vec& payload)
+void Orchestrator_order_Base::setSender_id(int sender_id)
 {
-    this->payload = payload;
+    this->sender_id = sender_id;
 }
 
-int Frame_Base::getACK() const
+int Orchestrator_order_Base::getRecv_id() const
 {
-    return this->ACK;
+    return this->recv_id;
 }
 
-void Frame_Base::setACK(int ACK)
+void Orchestrator_order_Base::setRecv_id(int recv_id)
 {
-    this->ACK = ACK;
+    this->recv_id = recv_id;
 }
 
-int Frame_Base::getNACK() const
+double Orchestrator_order_Base::getInterval() const
 {
-    return this->NACK;
+    return this->interval;
 }
 
-void Frame_Base::setNACK(int NACK)
+void Orchestrator_order_Base::setInterval(double interval)
 {
-    this->NACK = NACK;
+    this->interval = interval;
 }
 
-int Frame_Base::getRCV() const
+message_str& Orchestrator_order_Base::getMessage_body()
 {
-    return this->RCV;
+    return this->message_body;
 }
 
-void Frame_Base::setRCV(int RCV)
+void Orchestrator_order_Base::setMessage_body(const message_str& message_body)
 {
-    this->RCV = RCV;
+    this->message_body = message_body;
 }
 
-double Frame_Base::getDURATION() const
-{
-    return this->DURATION;
-}
-
-void Frame_Base::setDURATION(double DURATION)
-{
-    this->DURATION = DURATION;
-}
-
-class FrameDescriptor : public omnetpp::cClassDescriptor
+class Orchestrator_orderDescriptor : public omnetpp::cClassDescriptor
 {
   private:
     mutable const char **propertynames;
   public:
-    FrameDescriptor();
-    virtual ~FrameDescriptor();
+    Orchestrator_orderDescriptor();
+    virtual ~Orchestrator_orderDescriptor();
 
     virtual bool doesSupport(omnetpp::cObject *obj) const override;
     virtual const char **getPropertyNames() const override;
@@ -310,24 +295,24 @@ class FrameDescriptor : public omnetpp::cClassDescriptor
     virtual void *getFieldStructValuePointer(void *object, int field, int i) const override;
 };
 
-Register_ClassDescriptor(FrameDescriptor)
+Register_ClassDescriptor(Orchestrator_orderDescriptor)
 
-FrameDescriptor::FrameDescriptor() : omnetpp::cClassDescriptor("Frame", "omnetpp::cPacket")
+Orchestrator_orderDescriptor::Orchestrator_orderDescriptor() : omnetpp::cClassDescriptor("Orchestrator_order", "omnetpp::cPacket")
 {
     propertynames = nullptr;
 }
 
-FrameDescriptor::~FrameDescriptor()
+Orchestrator_orderDescriptor::~Orchestrator_orderDescriptor()
 {
     delete[] propertynames;
 }
 
-bool FrameDescriptor::doesSupport(omnetpp::cObject *obj) const
+bool Orchestrator_orderDescriptor::doesSupport(omnetpp::cObject *obj) const
 {
-    return dynamic_cast<Frame_Base *>(obj)!=nullptr;
+    return dynamic_cast<Orchestrator_order_Base *>(obj)!=nullptr;
 }
 
-const char **FrameDescriptor::getPropertyNames() const
+const char **Orchestrator_orderDescriptor::getPropertyNames() const
 {
     if (!propertynames) {
         static const char *names[] = { "customize",  nullptr };
@@ -338,20 +323,20 @@ const char **FrameDescriptor::getPropertyNames() const
     return propertynames;
 }
 
-const char *FrameDescriptor::getProperty(const char *propertyname) const
+const char *Orchestrator_orderDescriptor::getProperty(const char *propertyname) const
 {
     if (!strcmp(propertyname,"customize")) return "true";
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     return basedesc ? basedesc->getProperty(propertyname) : nullptr;
 }
 
-int FrameDescriptor::getFieldCount() const
+int Orchestrator_orderDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 5+basedesc->getFieldCount() : 5;
+    return basedesc ? 4+basedesc->getFieldCount() : 4;
 }
 
-unsigned int FrameDescriptor::getFieldTypeFlags(int field) const
+unsigned int Orchestrator_orderDescriptor::getFieldTypeFlags(int field) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -360,16 +345,15 @@ unsigned int FrameDescriptor::getFieldTypeFlags(int field) const
         field -= basedesc->getFieldCount();
     }
     static unsigned int fieldTypeFlags[] = {
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
+        FD_ISEDITABLE,
         FD_ISCOMPOUND,
-        FD_ISEDITABLE,
-        FD_ISEDITABLE,
-        FD_ISEDITABLE,
-        FD_ISEDITABLE,
     };
-    return (field>=0 && field<5) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<4) ? fieldTypeFlags[field] : 0;
 }
 
-const char *FrameDescriptor::getFieldName(int field) const
+const char *Orchestrator_orderDescriptor::getFieldName(int field) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -378,28 +362,26 @@ const char *FrameDescriptor::getFieldName(int field) const
         field -= basedesc->getFieldCount();
     }
     static const char *fieldNames[] = {
-        "payload",
-        "ACK",
-        "NACK",
-        "RCV",
-        "DURATION",
+        "sender_id",
+        "recv_id",
+        "interval",
+        "message_body",
     };
-    return (field>=0 && field<5) ? fieldNames[field] : nullptr;
+    return (field>=0 && field<4) ? fieldNames[field] : nullptr;
 }
 
-int FrameDescriptor::findField(const char *fieldName) const
+int Orchestrator_orderDescriptor::findField(const char *fieldName) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     int base = basedesc ? basedesc->getFieldCount() : 0;
-    if (fieldName[0]=='p' && strcmp(fieldName, "payload")==0) return base+0;
-    if (fieldName[0]=='A' && strcmp(fieldName, "ACK")==0) return base+1;
-    if (fieldName[0]=='N' && strcmp(fieldName, "NACK")==0) return base+2;
-    if (fieldName[0]=='R' && strcmp(fieldName, "RCV")==0) return base+3;
-    if (fieldName[0]=='D' && strcmp(fieldName, "DURATION")==0) return base+4;
+    if (fieldName[0]=='s' && strcmp(fieldName, "sender_id")==0) return base+0;
+    if (fieldName[0]=='r' && strcmp(fieldName, "recv_id")==0) return base+1;
+    if (fieldName[0]=='i' && strcmp(fieldName, "interval")==0) return base+2;
+    if (fieldName[0]=='m' && strcmp(fieldName, "message_body")==0) return base+3;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
-const char *FrameDescriptor::getFieldTypeString(int field) const
+const char *Orchestrator_orderDescriptor::getFieldTypeString(int field) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -408,16 +390,15 @@ const char *FrameDescriptor::getFieldTypeString(int field) const
         field -= basedesc->getFieldCount();
     }
     static const char *fieldTypeStrings[] = {
-        "message_vec",
-        "int",
         "int",
         "int",
         "double",
+        "message_str",
     };
-    return (field>=0 && field<5) ? fieldTypeStrings[field] : nullptr;
+    return (field>=0 && field<4) ? fieldTypeStrings[field] : nullptr;
 }
 
-const char **FrameDescriptor::getFieldPropertyNames(int field) const
+const char **Orchestrator_orderDescriptor::getFieldPropertyNames(int field) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -430,7 +411,7 @@ const char **FrameDescriptor::getFieldPropertyNames(int field) const
     }
 }
 
-const char *FrameDescriptor::getFieldProperty(int field, const char *propertyname) const
+const char *Orchestrator_orderDescriptor::getFieldProperty(int field, const char *propertyname) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -443,7 +424,7 @@ const char *FrameDescriptor::getFieldProperty(int field, const char *propertynam
     }
 }
 
-int FrameDescriptor::getFieldArraySize(void *object, int field) const
+int Orchestrator_orderDescriptor::getFieldArraySize(void *object, int field) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -451,13 +432,13 @@ int FrameDescriptor::getFieldArraySize(void *object, int field) const
             return basedesc->getFieldArraySize(object, field);
         field -= basedesc->getFieldCount();
     }
-    Frame_Base *pp = (Frame_Base *)object; (void)pp;
+    Orchestrator_order_Base *pp = (Orchestrator_order_Base *)object; (void)pp;
     switch (field) {
         default: return 0;
     }
 }
 
-const char *FrameDescriptor::getFieldDynamicTypeString(void *object, int field, int i) const
+const char *Orchestrator_orderDescriptor::getFieldDynamicTypeString(void *object, int field, int i) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -465,13 +446,13 @@ const char *FrameDescriptor::getFieldDynamicTypeString(void *object, int field, 
             return basedesc->getFieldDynamicTypeString(object,field,i);
         field -= basedesc->getFieldCount();
     }
-    Frame_Base *pp = (Frame_Base *)object; (void)pp;
+    Orchestrator_order_Base *pp = (Orchestrator_order_Base *)object; (void)pp;
     switch (field) {
         default: return nullptr;
     }
 }
 
-std::string FrameDescriptor::getFieldValueAsString(void *object, int field, int i) const
+std::string Orchestrator_orderDescriptor::getFieldValueAsString(void *object, int field, int i) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -479,18 +460,17 @@ std::string FrameDescriptor::getFieldValueAsString(void *object, int field, int 
             return basedesc->getFieldValueAsString(object,field,i);
         field -= basedesc->getFieldCount();
     }
-    Frame_Base *pp = (Frame_Base *)object; (void)pp;
+    Orchestrator_order_Base *pp = (Orchestrator_order_Base *)object; (void)pp;
     switch (field) {
-        case 0: {std::stringstream out; out << pp->getPayload(); return out.str();}
-        case 1: return long2string(pp->getACK());
-        case 2: return long2string(pp->getNACK());
-        case 3: return long2string(pp->getRCV());
-        case 4: return double2string(pp->getDURATION());
+        case 0: return long2string(pp->getSender_id());
+        case 1: return long2string(pp->getRecv_id());
+        case 2: return double2string(pp->getInterval());
+//        case 3: {std::stringstream out; out << pp->getMessage_body(); return out.str();}
         default: return "";
     }
 }
 
-bool FrameDescriptor::setFieldValueAsString(void *object, int field, int i, const char *value) const
+bool Orchestrator_orderDescriptor::setFieldValueAsString(void *object, int field, int i, const char *value) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -498,17 +478,16 @@ bool FrameDescriptor::setFieldValueAsString(void *object, int field, int i, cons
             return basedesc->setFieldValueAsString(object,field,i,value);
         field -= basedesc->getFieldCount();
     }
-    Frame_Base *pp = (Frame_Base *)object; (void)pp;
+    Orchestrator_order_Base *pp = (Orchestrator_order_Base *)object; (void)pp;
     switch (field) {
-        case 1: pp->setACK(string2long(value)); return true;
-        case 2: pp->setNACK(string2long(value)); return true;
-        case 3: pp->setRCV(string2long(value)); return true;
-        case 4: pp->setDURATION(string2double(value)); return true;
+        case 0: pp->setSender_id(string2long(value)); return true;
+        case 1: pp->setRecv_id(string2long(value)); return true;
+        case 2: pp->setInterval(string2double(value)); return true;
         default: return false;
     }
 }
 
-const char *FrameDescriptor::getFieldStructName(int field) const
+const char *Orchestrator_orderDescriptor::getFieldStructName(int field) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -517,12 +496,12 @@ const char *FrameDescriptor::getFieldStructName(int field) const
         field -= basedesc->getFieldCount();
     }
     switch (field) {
-        case 0: return omnetpp::opp_typename(typeid(message_vec));
+        case 3: return omnetpp::opp_typename(typeid(message_str));
         default: return nullptr;
     };
 }
 
-void *FrameDescriptor::getFieldStructValuePointer(void *object, int field, int i) const
+void *Orchestrator_orderDescriptor::getFieldStructValuePointer(void *object, int field, int i) const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
     if (basedesc) {
@@ -530,9 +509,9 @@ void *FrameDescriptor::getFieldStructValuePointer(void *object, int field, int i
             return basedesc->getFieldStructValuePointer(object, field, i);
         field -= basedesc->getFieldCount();
     }
-    Frame_Base *pp = (Frame_Base *)object; (void)pp;
+    Orchestrator_order_Base *pp = (Orchestrator_order_Base *)object; (void)pp;
     switch (field) {
-        case 0: return (void *)(&pp->getPayload()); break;
+        case 3: return (void *)(&pp->getMessage_body()); break;
         default: return nullptr;
     }
 }

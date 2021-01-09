@@ -15,7 +15,7 @@
 
 #ifndef __DATA_LINK_NODE_H_
 #define __DATA_LINK_NODE_H_
-
+#include <assert.h>
 #include <omnetpp.h>
 #include <fstream>
 #include <string>
@@ -25,8 +25,9 @@
 #include <vector>
 #include <random>
 #include <string.h>     //strncmp
-
+#include "orchestrator_order_m.h"
 #include "frame_m.h"
+
 using namespace omnetpp;
 
 /**
@@ -36,21 +37,22 @@ class Node : public cSimpleModule
 {
     //A public Q that contains pointers to tuples
     //each tuple has an int (receiver id) and a pointer to the Frame to be sent to.
-    std::queue <std::tuple<int, Frame_Base*>* > messages_info;
+    std::queue <std::tuple<int, double, Frame_Base*>* > messages_info;
     const char FLAG = 1;
     const char ESC = 2;
-    std::queue <std::tuple<int, int, double>* > send_rcv;
+    int last_one;
 
   protected:
-    virtual void initialize();
-    virtual void schedule_self_msg();                               //Common
+    virtual void initialize();                                      //Evram
     virtual void construct_msg_q();                                 //Evram
-    virtual void orchestrate_msgs();                                //Evram
-    virtual void handleMessage(cMessage *msg);                      //Kareem
-    virtual void  modify_msg(Frame_Base *frame);                     //Omar
+    virtual void orchestrate_msgs(int line_index);                  //Evram
+    virtual void buffer_msg (cMessage *msg);                        //Evram
     virtual Frame_Base* byte_stuff (const std::string& msg);        //Sayed
-    virtual std::string byte_destuff (Frame_Base* frame);           //Sayed
     virtual void add_haming (Frame_Base* frame);                    //Sayed
+    virtual void schedule_self_msg(int line_index);                 //Common
+    virtual void handleMessage(cMessage *msg);                      //Kareem
+    virtual void  modify_msg(Frame_Base *frame);                    //Omar
+    virtual std::string byte_destuff (Frame_Base* frame);           //Sayed
     virtual bool error_detect_correct (Frame_Base* frame);          //Sayed
 };
 

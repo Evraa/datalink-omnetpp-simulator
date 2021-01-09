@@ -10,6 +10,7 @@ network Data_Link
     //    These @display is GUI, don't bother
     parameters:
         int N = default(8);
+        double arrival_time = default(2.0);
         @display("bgb=349,228;i=block/classifier2");
     submodules:
         orchestrator: Node {
@@ -23,4 +24,8 @@ network Data_Link
             nodes[i].outs++ --> IdealChannel --> nodes[j].ins++;
             nodes[i].ins++ <-- IdealChannel { @display("ls=black,2,s"); } <-- nodes[j].outs++;
         }
+        for i=0..sizeof(nodes)-1 {
+            orchestrator.outs++ --> IdealChannel { @display("ls=#E9E9E9,1,d"); } --> nodes[i].ins++;
+        }
+
 }
