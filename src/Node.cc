@@ -474,22 +474,7 @@ void Node::handleMessage(cMessage *msg)
         {
             //Add the ordered message to the buffer of messages to be sent.
             buffer_msg (msg);
-
-            //To modify a frame
-
-
-            //To duplicate a frame
-            //leave it at the messages_info Q., hamming is already added, Kareem needs to check..IMP
-
-            //To send a message
-            //Frame_Base* tmp = std::get<0>(*this->messages_info.front());
-            //int rcv_id = std::get<0>(*this->messages_info.front());
-            //double interval = std::get<0>(*this->messages_info.front());
-            //send(next_frame, "outs", dest_gate);
-
-            //Here lies the sending logic..
-
-         }
+        }
          // b   n   e
         else
         {
