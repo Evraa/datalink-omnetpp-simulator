@@ -314,6 +314,10 @@ void Node::modify_msg (Frame_Base* frame)
     
     if(rand_corrupt < p_corrupt )
     {
+        // for(int i=0; i<frame->getPayload().size(); i++)
+        //     std::cout<<frame->getPayload()[i];
+        // std::cout<<endl;
+
         std::cout <<"Message is Modified"<<endl;
         int payloadSize = frame->getPayload().size();
         if(payloadSize)
