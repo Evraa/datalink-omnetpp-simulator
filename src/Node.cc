@@ -39,25 +39,25 @@ void Node::orchestrate_msgs(int line_index)
     double when_to_send = exponential(1 / par("lambda").doubleValue()) + simTime().dbl();
 
     //Fetch Message from file with rounding
-    std::ifstream myfile("../msgs/msgs.txt");
+    std::ifstream myFile("../msgs/msgs.txt");
     std::string line;
-    if (myfile.is_open())
+    if (myFile.is_open())
     {
         int loop_mod = line_index % 1000;   //1000 is the max message lines we might have
         for (int i=0; i<loop_mod; i++)
         {
-            std::getline (myfile,line);
+            std::getline (myFile,line);
 
             //wrap around
-            if (myfile.eof())
+            if (myFile.eof())
             {
-                myfile.close();
-                myfile.open("../msgs/msgs.txt");
+                myFile.close();
+                myFile.open("../msgs/msgs.txt");
             }
         }
     }
     else
-        std::cout <<"An error occured, Can't find the msgs. file!!"<<endl;
+        std::cout <<"An error occurred, Can't find the msgs. file!!"<<endl;
 
     order_i->setSender_id(rand_sender);
     order_i->setRecv_id(rand_rcv);
@@ -118,10 +118,12 @@ void Node::initialize()
 
 }
 
-/*
-*   TODO: Add documentation.
-*/
-void Node::add_haming (Frame_Base* frame)
+/**
+ * @brief add hamming parity check bits to the frame payload
+ * 
+ * @param frame the frame to modify its payload
+ */
+void Node::add_hamming (Frame_Base* frame)
 {
     std::cout<<"Add hamming\n"<<endl;
     std::vector<bool> payload = frame->getPayload();
@@ -149,9 +151,13 @@ void Node::add_haming (Frame_Base* frame)
     frame->setPayload(hamming);
 }
 
-/*
-*   TODO: Add documentation.
-*/
+/**
+ * @brief detect and correct errors in frame payload using hamming codes
+ * and remove the parity bits from the payload
+ * 
+ * @param frame the frame to detect errors in and remove them
+ * @return true if there was a detected error
+ */
 bool Node::error_detect_correct (Frame_Base* frame)
 {
     std::vector<bool> payload = frame->getPayload();
@@ -192,9 +198,12 @@ bool Node::error_detect_correct (Frame_Base* frame)
     return false;
 }
 
-/*
-*   TODO: Add documentation.
-*/
+/**
+ * @brief frame the message and add byte stuffing
+ * 
+ * @param msg the message string to create the frame for it
+ * @return Frame_Base* a frame containing the message with byte stuffing
+ */
 Frame_Base* Node::byte_stuff (const std::string& msg)
 {
     std::cout <<"Add byte stuffing.\n";
@@ -222,9 +231,13 @@ Frame_Base* Node::byte_stuff (const std::string& msg)
     return frm;
 }
 
-/*
-*   TODO: Add documentation.
-*/
+/**
+ * @brief Do the opposite of byte stuffing, removing the framing 
+ * and removing the byte stuffing
+ * 
+ * @param frame the frame to extract the message from
+ * @return std::string the message string
+ */
 std::string Node::byte_destuff (Frame_Base* frame)
 {
     std::cout <<"Remove byte stuffing.\n";
@@ -358,7 +371,7 @@ void Node::buffer_msg (cMessage *msg)
     //stuff the message
     Frame_Base* msg_frame = this->byte_stuff(message_to_frame);
     //add hamming
-    this->add_haming(msg_frame);
+    this->add_hamming(msg_frame);
                                             //YOU DON'T NEED THE TUPLE
     //add a tuple for my new message                                                    //PS. I added direct dest gate.
     std::tuple<int, double, Frame_Base*>* temp= new std::tuple<int, double, Frame_Base*>(idx, interval, msg_frame);
@@ -374,7 +387,7 @@ void Node::buffer_msg (cMessage *msg)
 }
 
 /*
-*   Utitlity function used in go-back-n algorithm.
+*   Utility function used in go-back-n algorithm.
 */
 bool Node::between(int idx, int b){
     int c = this->win_end[idx], a = this->win_begin[idx];
@@ -384,7 +397,7 @@ bool Node::between(int idx, int b){
 }
 
 /*
-*   Utitlity function used in go-back-n algorithm.
+*   Utility function used in go-back-n algorithm.
 */
 int Node::current_window_size(int idx){
     int ret = this->win_end[idx] - this->win_begin[idx];

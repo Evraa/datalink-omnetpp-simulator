@@ -63,7 +63,7 @@ class Node : public cSimpleModule
     virtual void schedule_self_msg(int line_index);                 //Evram
 
     virtual Frame_Base* byte_stuff (const std::string& msg);        //Sayed
-    virtual void add_haming (Frame_Base* frame);                    //Sayed
+    virtual void add_hamming (Frame_Base* frame);                   //Sayed
     virtual bool error_detect_correct (Frame_Base* frame);          //Sayed
     virtual std::string byte_destuff (Frame_Base* frame);           //Sayed
 
