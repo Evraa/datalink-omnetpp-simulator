@@ -414,8 +414,12 @@ void Node::handleMessage(cMessage *msg)
     if (std::strcmp(this->getName(),"orchestrator") == 0)
     {
         Orchestrator_order_Base* msg_rcv = check_and_cast<Orchestrator_order_Base *> (msg);
-        orchestrate_msgs(msg_rcv->getKind());
-        this->schedule_self_msg(msg_rcv->getKind()+1);
+        int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
+        int kind = msg_rcv->getKind();
+        for (int i=0; i<nodes_size; i++)
+            orchestrate_msgs(kind++);
+
+        this->schedule_self_msg(kind);
         return;
     }
     else
