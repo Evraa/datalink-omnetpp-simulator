@@ -29,15 +29,22 @@ void Node::orchestrate_msgs(int line_index)
     //Parameters
     int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
 
+    //
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::default_random_engine generator (seed);
+    std::uniform_int_distribution<int> distribution(1,nodes_size-1);
+
     //Assign Random with constraints
-    int rand_sender = uniform(0, nodes_size);    //rand -> 0:7
+//    int rand_sender = uniform(0,1) * nodes_size;    //rand -> 0:7
+    int rand_sender = distribution(generator);
     int rand_rcv = 0;
     do{
-        rand_rcv = uniform(0, nodes_size);    //rand -> 0:7 != rand_sender "NO SELF MSGS"
+//        rand_rcv = uniform(0,1) * nodes_size;   //rand -> 0:7 != rand_sender "NO SELF MSGS"
+        rand_rcv = distribution(generator);
     } while(rand_rcv == rand_sender || (nodes_size!=2 && this->last_one == rand_rcv));
 
     double when_to_send = exponential(1 / par("lambda").doubleValue()) + simTime().dbl();
-
+    std::cout <<rand_sender << "\t"<<rand_rcv <<"\t"<<when_to_send<<endl;
     //Fetch Message from file with rounding
     std::ifstream myFile("../msgs/msgs.txt");
     std::string line;
