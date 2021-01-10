@@ -44,10 +44,11 @@ class Node : public cSimpleModule
     int win_end[n];
     double last_ack_time[n];
     double last_send_time[n];
-    const double SEND_INTERVAL = 0.05;
+
+    const double SEND_INTERVAL = 0.000005;
     const double SEND_TIMEOUT = 0.15;
-    const double ACK_TIMEOUT = 0.5;
-    const double NEXT_TIME_STEP = 0.001;
+    const double ACK_TIMEOUT = 1.0;
+    const double NEXT_TIME_STEP = 0;
     const int MAX_WINDOW_SIZE = 7;
     //Flags for stuffing
     const char FLAG = 1;
@@ -60,6 +61,7 @@ class Node : public cSimpleModule
     int nack_count = 0;
     int retransmit_count = 0;
     int drop_count = 0;
+    int acked_msgs = 0;
 
   protected:
     virtual void initialize();                                      //Evram
