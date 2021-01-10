@@ -58,7 +58,7 @@ class Node : public cSimpleModule
     int messages_count = 0;
     int ack_count = 0;
     int nack_count = 0;
-    int retransmit_coutn = 0;
+    int retransmit_count = 0;
     int drop_count = 0;
 
   protected:

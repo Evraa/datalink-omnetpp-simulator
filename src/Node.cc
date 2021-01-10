@@ -132,7 +132,14 @@ void Node::finish()
     //print it one time only
     if (std::strcmp(this->getName(),"orchestrator") == 0)
     {
-
+        std::cout <<"\n\n*****\t\tEnd of Transmissions*****\n\n";
+        std::cout <<"Total Frames Created by Orchestrator:\t" <<this->messages_count<<endl;
+        std::cout <<"Total ACKs Sent by Nodes:\t" <<this->ack_count<<endl;
+        std::cout <<"Total NACKs Sent by Nodes:\t" <<this->nack_count<<endl;
+        std::cout <<"Total Retransmissions Sent:\t" <<this->retransmit_count<<endl;
+        std::cout <<"Total Dropped Frames:\t" <<this->drop_count<<endl;
+        double total_msgs =drop_count+retransmit_count+nack_count+ack_count+messages_count;
+        std::cout <<"\n\nUtility:\t"<<this->messages_count / total_msgs<<endl;
     }
 }
 
