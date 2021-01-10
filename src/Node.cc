@@ -374,12 +374,12 @@ void Node::buffer_msg (cMessage *msg)
     this->add_hamming(msg_frame);
                                             //YOU DON'T NEED THE TUPLE
     //add a tuple for my new message                                                    //PS. I added direct dest gate.
-    std::tuple<int, double, Frame_Base*>* temp= new std::tuple<int, double, Frame_Base*>(idx, interval, msg_frame);
+    //std::tuple<int, double, Frame_Base*>* temp= new std::tuple<int, double, Frame_Base*>(idx, interval, msg_frame);
     //buffer the message
-    this->messages_info[idx].push_back(msg_frame);
-    // msg_frame->setKind(idx);
-    // msg_frame->setName("Add to buffer");
-    // scheduleAt(simTime() + interval, msg_frame);
+    //this->messages_info[idx].push_back(msg_frame);
+    msg_frame->setKind(idx);
+    msg_frame->setName("Add to buffer");
+    scheduleAt(simTime() + interval, msg_frame);
     std::cout <<"Current SimTime:\t"<<simTime()<<endl;
     std::cout <<"Node:\t"<<this->getIndex()<<"\tScheduled the message:\t"<<message_to_frame<<endl;
     std::cout <<"To be Sent to:\t"<<rcv_id<<"\tAfter:\t"<<interval<<endl;
@@ -471,6 +471,7 @@ void Node::handleMessage(cMessage *msg)
                         msg_frame->setACK(this->acknowledges[idx]);
                         msg_frame->setName("Receive Message");
                         msg_frame->setKind(this->getIndex());
+                        msg_frame->setFrame_seq(this->nxt_to_send[idx]);
                         this->nxt_to_send[idx] = (this->nxt_to_send[idx] + 1)%(1+this->MAX_WINDOW_SIZE);
                         if(this->nxt_to_send[idx] != this->win_end[idx]){
                             cMessage * cmsg = new cMessage();
@@ -516,7 +517,7 @@ void Node::handleMessage(cMessage *msg)
             }
             else{
                 Frame_Base* msg_frame = check_and_cast<Frame_Base *> (msg);
-                int send_ind = msg_frame->getKind(), ind = this->getIndex();
+                int send_ind = msg_frame->getKind();
                 int ack = (msg_frame->getACK()+ 1)%(1+this->MAX_WINDOW_SIZE);
                 message_vec payload = msg_frame->getPayload();
                 if(this->between(send_ind, ack)){
@@ -536,7 +537,7 @@ void Node::handleMessage(cMessage *msg)
                     }
                 }
                 if(strcmp(msg->getName(), "Receive Message")==0){
-                    int r = 5;         // TBC
+                    int r = msg_frame->getFrame_seq();         // TBC
                     if(r == this->acknowledges[send_ind]){
                         this->acknowledges[send_ind] = (this->acknowledges[send_ind]+1)%(1+this->MAX_WINDOW_SIZE);
                         cMessage * cmsg = new cMessage();

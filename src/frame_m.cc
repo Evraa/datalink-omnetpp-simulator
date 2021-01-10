@@ -51,7 +51,7 @@ void doParsimUnpacking(omnetpp::cCommBuffer *buffer, std::vector<T,A>& v)
     v.resize(n);
     for (int i = 0; i < n; i++)
         return;
-//        doParsimUnpacking(buffer, v[i]);
+        //doParsimUnpacking(buffer, v[i]);
 }
 
 // Packing/unpacking an std::list
@@ -181,6 +181,7 @@ inline std::ostream& operator<<(std::ostream& out, const std::vector<T,A>& vec)
 Frame_Base::Frame_Base(const char *name, short kind) : ::omnetpp::cPacket(name,kind)
 {
     this->ACK = 0;
+    this->frame_seq = 0;
 }
 
 Frame_Base::Frame_Base(const Frame_Base& other) : ::omnetpp::cPacket(other)
@@ -204,6 +205,7 @@ void Frame_Base::copy(const Frame_Base& other)
 {
     this->payload = other.payload;
     this->ACK = other.ACK;
+    this->frame_seq = other.frame_seq;
 }
 
 void Frame_Base::parsimPack(omnetpp::cCommBuffer *b) const
@@ -211,6 +213,7 @@ void Frame_Base::parsimPack(omnetpp::cCommBuffer *b) const
     ::omnetpp::cPacket::parsimPack(b);
     doParsimPacking(b,this->payload);
     doParsimPacking(b,this->ACK);
+    doParsimPacking(b,this->frame_seq);
 }
 
 void Frame_Base::parsimUnpack(omnetpp::cCommBuffer *b)
@@ -218,6 +221,7 @@ void Frame_Base::parsimUnpack(omnetpp::cCommBuffer *b)
     ::omnetpp::cPacket::parsimUnpack(b);
     doParsimUnpacking(b,this->payload);
     doParsimUnpacking(b,this->ACK);
+    doParsimUnpacking(b,this->frame_seq);
 }
 
 message_vec& Frame_Base::getPayload()
@@ -238,6 +242,16 @@ int Frame_Base::getACK() const
 void Frame_Base::setACK(int ACK)
 {
     this->ACK = ACK;
+}
+
+int Frame_Base::getFrame_seq() const
+{
+    return this->frame_seq;
+}
+
+void Frame_Base::setFrame_seq(int frame_seq)
+{
+    this->frame_seq = frame_seq;
 }
 
 class FrameDescriptor : public omnetpp::cClassDescriptor
@@ -306,7 +320,7 @@ const char *FrameDescriptor::getProperty(const char *propertyname) const
 int FrameDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 2+basedesc->getFieldCount() : 2;
+    return basedesc ? 3+basedesc->getFieldCount() : 3;
 }
 
 unsigned int FrameDescriptor::getFieldTypeFlags(int field) const
@@ -320,8 +334,9 @@ unsigned int FrameDescriptor::getFieldTypeFlags(int field) const
     static unsigned int fieldTypeFlags[] = {
         FD_ISCOMPOUND,
         FD_ISEDITABLE,
+        FD_ISEDITABLE,
     };
-    return (field>=0 && field<2) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<3) ? fieldTypeFlags[field] : 0;
 }
 
 const char *FrameDescriptor::getFieldName(int field) const
@@ -335,8 +350,9 @@ const char *FrameDescriptor::getFieldName(int field) const
     static const char *fieldNames[] = {
         "payload",
         "ACK",
+        "frame_seq",
     };
-    return (field>=0 && field<2) ? fieldNames[field] : nullptr;
+    return (field>=0 && field<3) ? fieldNames[field] : nullptr;
 }
 
 int FrameDescriptor::findField(const char *fieldName) const
@@ -345,6 +361,7 @@ int FrameDescriptor::findField(const char *fieldName) const
     int base = basedesc ? basedesc->getFieldCount() : 0;
     if (fieldName[0]=='p' && strcmp(fieldName, "payload")==0) return base+0;
     if (fieldName[0]=='A' && strcmp(fieldName, "ACK")==0) return base+1;
+    if (fieldName[0]=='f' && strcmp(fieldName, "frame_seq")==0) return base+2;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -359,8 +376,9 @@ const char *FrameDescriptor::getFieldTypeString(int field) const
     static const char *fieldTypeStrings[] = {
         "message_vec",
         "int",
+        "int",
     };
-    return (field>=0 && field<2) ? fieldTypeStrings[field] : nullptr;
+    return (field>=0 && field<3) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **FrameDescriptor::getFieldPropertyNames(int field) const
@@ -429,6 +447,7 @@ std::string FrameDescriptor::getFieldValueAsString(void *object, int field, int 
     switch (field) {
         case 0: {std::stringstream out; out << pp->getPayload(); return out.str();}
         case 1: return long2string(pp->getACK());
+        case 2: return long2string(pp->getFrame_seq());
         default: return "";
     }
 }
@@ -444,6 +463,7 @@ bool FrameDescriptor::setFieldValueAsString(void *object, int field, int i, cons
     Frame_Base *pp = (Frame_Base *)object; (void)pp;
     switch (field) {
         case 1: pp->setACK(string2long(value)); return true;
+        case 2: pp->setFrame_seq(string2long(value)); return true;
         default: return false;
     }
 }
@@ -476,3 +496,5 @@ void *FrameDescriptor::getFieldStructValuePointer(void *object, int field, int i
         default: return nullptr;
     }
 }
+
+

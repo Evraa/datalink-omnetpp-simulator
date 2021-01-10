@@ -19,9 +19,9 @@
 
 
 // cplusplus {{
-//  Any includes goes here
-    #include <vector>
-    typedef std::vector <bool> message_vec;
+//	Any includes goes here
+	#include <vector>
+	typedef std::vector <bool> message_vec;
 // }}
 
 /**
@@ -32,6 +32,7 @@
  *     \@customize(true);  // see the generated C++ header for more info
  *     message_vec payload;
  *     int ACK;
+ *     int frame_seq;
  * }
  * </pre>
  *
@@ -43,6 +44,7 @@
  * {
  *   private:
  *     void copy(const Frame& other) { ... }
+
  *   public:
  *     Frame(const char *name=nullptr, short kind=0) : Frame_Base(name,kind) {}
  *     Frame(const Frame& other) : Frame_Base(other) {copy(other);}
@@ -63,6 +65,7 @@ class Frame_Base : public ::omnetpp::cPacket
   protected:
     message_vec payload;
     int ACK;
+    int frame_seq;
 
   private:
     void copy(const Frame_Base& other);
@@ -88,7 +91,10 @@ class Frame_Base : public ::omnetpp::cPacket
     virtual void setPayload(const message_vec& payload);
     virtual int getACK() const;
     virtual void setACK(int ACK);
+    virtual int getFrame_seq() const;
+    virtual void setFrame_seq(int frame_seq);
 };
 
 
 #endif // ifndef __FRAME_M_H
+
