@@ -95,7 +95,15 @@ void Node::initialize()
     if (std::strcmp(this->getName(),"orchestrator") == 0)
         schedule_self_msg(1);
     else
+    {
+        for(int i = 0; i < n; ++i){
+            this->acknowledges[i] = 0;
+            this->nxt_to_send[i] = 0;
+            this->win_begin[i] = 0;
+            this->win_end[i] = 0;
+        }
         std::cout << "My name is:\t"<<this->getName() <<"\tMy id is:\t"<<this->getIndex()<<"\tI am awake!"<<endl;
+    }
 
 }
 
@@ -312,9 +320,7 @@ void Node::buffer_msg (cMessage *msg)
     assert(order_rcv->getSender_id() == this->getIndex());
     //Message info.
     int rcv_id = order_rcv->getRecv_id();
-    int dest_gate = rcv_id;
-    if (rcv_id > getIndex())
-        dest_gate--;
+    int idx = rcv_id;
     double interval = order_rcv->getInterval();
     std::string message_to_frame = order_rcv->getMessage_body();
 
@@ -323,13 +329,31 @@ void Node::buffer_msg (cMessage *msg)
     //add hamming
     this->add_haming(msg_frame);
     //add a tuple for my new message                                                    //PS. I added direct dest gate.
-    std::tuple<int, double, Frame_Base*>* temp= new std::tuple<int, double, Frame_Base*>(dest_gate, interval, msg_frame);
+    std::tuple<int, double, Frame_Base*>* temp= new std::tuple<int, double, Frame_Base*>(idx, interval, msg_frame);
     //buffer the message
-    this->messages_info.push(temp);
+    this->messages_info[idx].push_back(msg_frame);
+    // msg_frame->setKind(idx);
+    // msg_frame->setName("Add to buffer");
+    // scheduleAt(simTime() + interval, msg_frame);
     std::cout <<"Current SimTime:\t"<<simTime()<<endl;
     std::cout <<"Node:\t"<<this->getIndex()<<"\tScheduled the message:\t"<<message_to_frame<<endl;
     std::cout <<"To be Sent to:\t"<<rcv_id<<"\tAfter:\t"<<interval<<endl;
     return;
+}
+
+bool Node::between(int idx, int b){
+    int c = this->win_end[idx], a = this->win_begin[idx];
+    if(c >= a)
+        return b >= a && b < c;
+    return b < c || b >= a;
+}
+
+
+int Node::current_window_size(int idx){
+    int ret = this->win_end[idx] - this->win_begin[idx];
+    if(this->win_begin[idx] <= this->win_end[idx])
+        return ret;
+    return this->MAX_WINDOW_SIZE + 1 + ret;
 }
 
 
@@ -367,8 +391,107 @@ void Node::handleMessage(cMessage *msg)
          }
         else
         {
-            //here is the receiving logic
-            return;
+            if(msg->isSelfMessage()){
+                if(strcmp(msg->getName(), "Add to buffer")==0){
+                    int idx = msg->getKind();
+                    Frame_Base* msg_frame = check_and_cast<Frame_Base *> (msg);
+                    this->messages_info[idx].push_back(msg_frame);
+                    if(this->current_window_size(idx) < this->MAX_WINDOW_SIZE){
+                        this->win_end[idx] = (this->win_end[idx]+1)%(1+this->MAX_WINDOW_SIZE);
+                    }
+                    cMessage * cmsg = new cMessage();
+                    cmsg->setName("Send Message");
+                    cmsg->setKind(idx);
+                    scheduleAt(simTime()+ this->NEXT_TIME_STEP, cmsg); // TBC
+                }
+                if(strcmp(msg->getName(), "Send Message")==0){
+                    int idx = msg->getKind(), dest_gate = idx;
+                    if(this->nxt_to_send[idx] != this->win_end[idx]){
+                        delete msg;
+                        if(idx > this->getIndex())
+                            dest_gate--;
+                        int to_send = this->nxt_to_send[idx] - this->win_begin[idx];
+                        if(this->nxt_to_send[idx] < this->win_begin[idx])
+                            to_send += this->MAX_WINDOW_SIZE+1;
+                        Frame_Base* msg_frame = this->messages_info[idx][to_send];
+                        msg_frame->setACK(this->acknowledges[idx]);
+                        msg_frame->setName("Receive Message");
+                        msg_frame->setKind(this->getIndex());
+                        this->nxt_to_send[idx] = (this->nxt_to_send[idx] + 1)%(1+this->MAX_WINDOW_SIZE);
+                        if(this->nxt_to_send[idx] != this->win_end[idx]){
+                            cMessage * cmsg = new cMessage();
+                            cmsg->setName("Send Message");
+                            cmsg->setKind(idx);
+                            scheduleAt(simTime() + this->SEND_INTERVAL, cmsg);   // TBC
+                        }
+                        cMessage * cmsg = new cMessage();
+                        cmsg->setName("ACK TIMEOUT");
+                        cmsg->setKind(idx);
+                        send(msg_frame, "outs", dest_gate);
+                        scheduleAt(simTime() + this->ACK_TIMEOUT, cmsg);   // TBC
+                        this->last_send_time[idx] = simTime().dbl();          // TBC
+                    }
+                }
+                if(strcmp(msg->getName(), "ACK TIMEOUT")==0){
+                    int idx = msg->getKind();
+                    double curTime = simTime().dbl() - this->ACK_TIMEOUT;
+                    if(this->last_ack_time[idx] < curTime){
+                        this->nxt_to_send[idx] = this->win_begin[idx];
+                        if(this->nxt_to_send[idx] != this->win_end[idx]){
+                            cMessage * cmsg = new cMessage();
+                            cmsg->setName("Send Message");
+                            cmsg->setKind(idx);
+                            scheduleAt(simTime() + this->SEND_INTERVAL, cmsg);   // TBC
+                        }
+                    }
+                }
+                if(strcmp(msg->getName(), "SEND TIMEOUT")==0){
+                    int idx = msg->getKind(), dest_gate = idx;
+                    double curTime = simTime().dbl() - this->SEND_TIMEOUT;
+                    if(this->last_send_time[idx] < curTime){
+                        Frame_Base* msg_frame = new Frame_Base();
+                        msg_frame->setACK(this->acknowledges[idx]);
+                        msg_frame->setName("Receive ACK");
+                        msg_frame->setKind(this->getIndex());
+                        if(idx > this->getIndex())
+                            dest_gate--;
+                        send(msg_frame, "outs", dest_gate);
+                        this->last_send_time[idx] = simTime().dbl();          // TBC
+                    }
+                }
+            }
+            else{
+                Frame_Base* msg_frame = check_and_cast<Frame_Base *> (msg);
+                int send_ind = msg_frame->getKind(), ind = this->getIndex();
+                int ack = (msg_frame->getACK()+ 1)%(1+this->MAX_WINDOW_SIZE);
+                message_vec payload = msg_frame->getPayload();
+                if(this->between(send_ind, ack)){
+                    while(this->win_begin[send_ind] != ack){
+                        this->messages_info[send_ind].pop_front();
+                        this->win_begin[send_ind] = (this->win_begin[send_ind] + 1)%(1+this->MAX_WINDOW_SIZE);
+                    }
+                    int cnt = this->current_window_size(send_ind);
+                    int qusize = this->messages_info[send_ind].size();
+                    this->win_end[send_ind] = (this->win_end[send_ind] + qusize -cnt)%(1+this->MAX_WINDOW_SIZE);
+                    this->last_ack_time[send_ind] = simTime().dbl();          // TBC
+                    if(this->nxt_to_send[send_ind] != this->win_end[send_ind]){
+                        cMessage * cmsg = new cMessage();
+                        cmsg->setName("Send Message");
+                        cmsg->setKind(send_ind);
+                        scheduleAt(simTime() + this->SEND_INTERVAL, cmsg);   // TBC
+                    }
+                }
+                if(strcmp(msg->getName(), "Receive Message")==0){
+                    int r = 5;         // TBC
+                    if(r == this->acknowledges[send_ind]){
+                        this->acknowledges[send_ind] = (this->acknowledges[send_ind]+1)%(1+this->MAX_WINDOW_SIZE);
+                        cMessage * cmsg = new cMessage();
+                        cmsg->setName("SEND TIMEOUT");
+                        cmsg->setKind(send_ind);
+                        scheduleAt(simTime() + this->SEND_TIMEOUT, cmsg);   // TBC
+                    }
+                }
+            }
         }
     }
 
