@@ -540,6 +540,7 @@ void Node::handleMessage(cMessage *msg)
                 int ack = msg_frame->getACK();
                 // std::cout <<"this is ack:\t"<<ack<<endl;    
                 // message_vec payload = msg_frame->getPayload();
+                std::cout << win_begin[send_ind] << " " << win_end[send_ind] << " " << nxt_to_send[send_ind];
                 if(this->between(send_ind, ack-1)){
                     std::cout << "before sliding window *****" << endl;
                     std::cout << "window begin: " << this->win_begin[send_ind] << " window end: " << this->win_end[send_ind];
@@ -548,13 +549,13 @@ void Node::handleMessage(cMessage *msg)
                         this->messages_info[send_ind].pop_front();
                         this->win_begin[send_ind] = (this->win_begin[send_ind] + 1)%(1+this->MAX_WINDOW_SIZE);
                     }
+                    int qusize = this->messages_info[send_ind].size();
+                    int newend = std::min(qusize, MAX_WINDOW_SIZE);
+                    this->win_end[send_ind] = (this->win_begin[send_ind] + newend)%(1+this->MAX_WINDOW_SIZE);
+                    this->last_ack_time[send_ind] = simTime().dbl();          // TBC
                     std::cout << " after sliding window *****" << endl;
                     std::cout << "window begin: " << this->win_begin[send_ind] << " window end: " << this->win_end[send_ind];
                     std::cout << " acknowledgement: " << this->acknowledges[send_ind] << endl;
-                    int cnt = this->current_window_size(send_ind);
-                    int qusize = this->messages_info[send_ind].size();
-                    this->win_end[send_ind] = (this->win_end[send_ind] + qusize -cnt)%(1+this->MAX_WINDOW_SIZE);
-                    this->last_ack_time[send_ind] = simTime().dbl();          // TBC
                     if(this->nxt_to_send[send_ind] != this->win_end[send_ind]){
                         cMessage * cmsg = new cMessage();
                         cmsg->setName("Send Message");
