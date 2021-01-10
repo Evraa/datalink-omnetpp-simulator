@@ -290,13 +290,10 @@ void Node::modify_msg (Frame_Base* frame)
 }
 
 /*
-*   TODO: Add documentation.
+*  Delaying msg using bernoulli distribution
 */
 bool Node::delay_msg (double& delayedTime)
 {
-    /*
-     * Delaying msg using bernoulli distribution
-    */
     double rand_delay = uniform(0,1);
     double p_delay = par("p_delay").doubleValue();
     // double p_delay = 0.6;
@@ -312,13 +309,10 @@ bool Node::delay_msg (double& delayedTime)
 }
 
 /*
-*   TODO: Add documentation.
+*   losing msg using bernoulli distribution
 */
 bool Node::loss_msg ()
 {
-    /*
-     * losing msg using bernoulli distribution
-    */
     double rand_loss = uniform(0,1);
     double p_loss = par("p_loss").doubleValue();
     // double p_loss = 0.6;
@@ -329,13 +323,10 @@ bool Node::loss_msg ()
 }
 
 /*
-*   TODO: Add documentation.
+* duplicating msg using bernoulli distribution
 */
 bool Node::dup_msg ()
 {
-    /*
-     * duplicating msg using bernoulli distribution
-    */
     double rand_dup = uniform(0,1);
     double p_dup = par("p_dup").doubleValue();
     // double p_dup = 0.65;
