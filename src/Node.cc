@@ -540,6 +540,7 @@ void Node::handleMessage(cMessage *msg)
                         msg_frame->setKind(this->getIndex());
                         if(idx > this->getIndex())
                             dest_gate--;
+                        //this needs to be send_delay
                         send(msg_frame, "outs", dest_gate);
                         this->last_send_time[idx] = simTime().dbl();          // TBC
                     }
@@ -553,7 +554,7 @@ void Node::handleMessage(cMessage *msg)
                 int ack = msg_frame->getACK();
                 // std::cout <<"this is ack:\t"<<ack<<endl;    
                 // message_vec payload = msg_frame->getPayload();
-                if(this->between(send_ind, ack-1)){
+                if(this->between(send_ind, ack)){
                     std::cout << "before sliding window *****" << endl;
                     std::cout << "window begin: " << this->win_begin[send_ind] << " window end: " << this->win_end[send_ind];
                     std::cout << " acknowledgement: " << this->acknowledges[send_ind] << endl;
