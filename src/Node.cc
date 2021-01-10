@@ -356,7 +356,10 @@ bool Node::loss_msg ()
     // double p_loss = 0.6;
 
     if(rand_loss < p_loss )
-        return true;
+        {
+            this->drop_count++;
+            return true;
+        }
     return false;
 }
 
