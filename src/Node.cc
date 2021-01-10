@@ -132,7 +132,14 @@ void Node::finish()
     //print it one time only
     if (std::strcmp(this->getName(),"orchestrator") == 0)
     {
-
+        std::cout <<"\n\n*****\t\tEnd of Transmissions*****\n\n";
+        std::cout <<"Total Frames Created by Orchestrator:\t" <<this->messages_count<<endl;
+        std::cout <<"Total ACKs Sent by Nodes:\t" <<this->ack_count<<endl;
+        std::cout <<"Total NACKs Sent by Nodes:\t" <<this->nack_count<<endl;
+        std::cout <<"Total Retransmissions Sent:\t" <<this->retransmit_count<<endl;
+        std::cout <<"Total Dropped Frames:\t" <<this->drop_count<<endl;
+        double total_msgs =drop_count+retransmit_count+nack_count+ack_count+messages_count;
+        std::cout <<"\n\nUtility:\t"<<this->messages_count / total_msgs<<endl;
     }
 }
 
@@ -467,8 +474,6 @@ void Node::handleMessage(cMessage *msg)
         else
         {
             if(msg->isSelfMessage()){
-                //TODO: IMP YA KAREEM 
-                //get name will return either "Orchestrator" or "node"
                 if(strcmp(msg->getName(), "Add to buffer")==0){
                     int idx = msg->getKind();
                     Frame_Base* msg_frame = check_and_cast<Frame_Base *> (msg);
@@ -504,6 +509,7 @@ void Node::handleMessage(cMessage *msg)
                         std::cout << " at time " << simTime() << " the message " << this->byte_destuff(msg_frame) << endl;
                         send(msg_frame, "outs", dest_gate);
                         this->nxt_to_send[idx] = (this->nxt_to_send[idx] + 1)%(1+this->MAX_WINDOW_SIZE);
+                        std::cout <<"Next to send: "<<this->nxt_to_send[idx]<<endl;
                         if(this->nxt_to_send[idx] != this->win_end[idx]){
                             cMessage * cmsg = new cMessage();
                             cmsg->setName("Send Message");
@@ -547,6 +553,7 @@ void Node::handleMessage(cMessage *msg)
                 }
             }
             else{
+                //received a message from node.
                 Frame_Base* msg_frame = check_and_cast<Frame_Base *> (msg);
                 int send_ind = msg_frame->getKind();
                 std:: cout << "Node " << this->getIndex() << " received from " << send_ind << " the message ";
@@ -554,13 +561,17 @@ void Node::handleMessage(cMessage *msg)
                 int ack = msg_frame->getACK();
                 // std::cout <<"this is ack:\t"<<ack<<endl;    
                 // message_vec payload = msg_frame->getPayload();
-                if(this->between(send_ind, ack)){
+                std::cout << win_begin[send_ind] << " " << win_end[send_ind] << " " << nxt_to_send[send_ind];
+                if(this->between(send_ind, ack-1))
+                {
                     std::cout << "before sliding window *****" << endl;
                     std::cout << "window begin: " << this->win_begin[send_ind] << " window end: " << this->win_end[send_ind];
                     std::cout << " acknowledgement: " << this->acknowledges[send_ind] << endl;
                     while(this->win_begin[send_ind] != ack){
                         this->messages_info[send_ind].pop_front();
                         this->win_begin[send_ind] = (this->win_begin[send_ind] + 1)%(1+this->MAX_WINDOW_SIZE);
+                        //for stat.
+                        this->acked_msgs++;
                     }
                     int qusize = this->messages_info[send_ind].size();
                     int newend = std::min(qusize, MAX_WINDOW_SIZE);
