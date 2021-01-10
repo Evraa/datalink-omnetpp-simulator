@@ -48,7 +48,7 @@ class Node : public cSimpleModule
     const double SEND_INTERVAL = 0.000005;
     const double SEND_TIMEOUT = 0.15;
     const double ACK_TIMEOUT = 1.0;
-    const double NEXT_TIME_STEP = 0;
+    const double NEXT_TIME_STEP = 0.001;
     const int MAX_WINDOW_SIZE = 7;
     //Flags for stuffing
     const char FLAG = 1;

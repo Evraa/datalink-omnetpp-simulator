@@ -359,7 +359,7 @@ void Node::modify_msg (Frame_Base* frame)
 /*
 *  Delaying msg using bernoulli distribution
 */
-double Node::delay_msg (double& delayedTime)
+double Node::delay_msg ()
 {
     double rand_delay = uniform(0,1);
     double p_delay = par("p_delay").doubleValue();
@@ -489,6 +489,7 @@ void Node::handleMessage(cMessage *msg)
     {
         int myind = this->getIndex();
         std::cout << "handle message ********" << endl;
+        std::cout << "Simulation time = " << simTime().dbl() << endl;
         std::cout << this->getIndex() << " " << msg->getName() << endl;
         for(int i = 0; i < n; ++i)
             std::cout << nxt_to_send[myind][i] << " ";
@@ -515,10 +516,11 @@ void Node::handleMessage(cMessage *msg)
                     cMessage * cmsg = new cMessage();
                     cmsg->setName("Send Message");
                     cmsg->setKind(idx);
+                    std::cout << "AGAIN SEND MESSAGE" << endl;
                     scheduleAt(simTime()+ this->NEXT_TIME_STEP, cmsg); // TBC
                     std::cout << "********************" <<endl;
                 }
-                if(strcmp(msg->getName(), "Send Message")==0){
+                else if(strcmp(msg->getName(), "Send Message")==0){
                     std::cout << "Send Message *************" <<endl;
                     int idx = msg->getKind(), dest_gate = idx;
                     if(this->nxt_to_send[myind][idx] < this->win_end[myind][idx]){
@@ -528,7 +530,9 @@ void Node::handleMessage(cMessage *msg)
                         if(idx > this->getIndex())
                             dest_gate--;
                         int to_send = this->nxt_to_send[myind][idx];
-                        Frame_Base* msg_frame = this->messages_info[myind][idx][to_send];
+                        Frame_Base* temp_frame = this->messages_info[myind][idx][to_send];
+                        Frame_Base* msg_frame = new Frame_Base();
+                        msg_frame->setPayload(temp_frame->getPayload());
                         msg_frame->setACK(this->acknowledges[myind][idx]);
                         msg_frame->setName("Receive Message");
                         msg_frame->setKind(this->getIndex());
@@ -541,6 +545,7 @@ void Node::handleMessage(cMessage *msg)
                         if(this->nxt_to_send[myind][idx] != this->win_end[myind][idx]){
                             cMessage * cmsg = new cMessage();
                             cmsg->setName("Send Message");
+                            std::cout << "AGAIN SEND MESSAGE" << endl;
                             cmsg->setKind(idx);
                             scheduleAt(simTime() + this->SEND_INTERVAL, cmsg);   // TBC
                         }
@@ -552,20 +557,21 @@ void Node::handleMessage(cMessage *msg)
                     }
                     std::cout << "********************" <<endl;
                 }
-                if(strcmp(msg->getName(), "ACK TIMEOUT")==0){
+                else if(strcmp(msg->getName(), "ACK TIMEOUT")==0){
                     int idx = msg->getKind();
                     double curTime = simTime().dbl() - this->ACK_TIMEOUT;
                     if(this->last_ack_time[myind][idx] < curTime){
                         this->nxt_to_send[myind][idx] = this->win_begin[myind][idx];
                         if(this->nxt_to_send[myind][idx] != this->win_end[myind][idx]){
                             cMessage * cmsg = new cMessage();
+                            std::cout << "AGAIN SEND MESSAGE" << endl;
                             cmsg->setName("Send Message");
                             cmsg->setKind(idx);
                             scheduleAt(simTime() + this->SEND_INTERVAL, cmsg);   // TBC
                         }
                     }
                 }
-                if(strcmp(msg->getName(), "SEND TIMEOUT")==0){
+                else if(strcmp(msg->getName(), "SEND TIMEOUT")==0){
                     int idx = msg->getKind(), dest_gate = idx;
                     double curTime = simTime().dbl() - this->SEND_TIMEOUT;
                     if(this->last_send_time[myind][idx] < curTime){
