@@ -363,7 +363,6 @@ void Node::buffer_msg (cMessage *msg)
     assert(order_rcv->getSender_id() == this->getIndex());
     //Message info.
     int rcv_id = order_rcv->getRecv_id();
-    int idx = rcv_id;
                                             //WHY DID KAREEM REMOVED THIS!
     double interval = order_rcv->getInterval();
     std::string message_to_frame = order_rcv->getMessage_body();
@@ -377,7 +376,7 @@ void Node::buffer_msg (cMessage *msg)
     //std::tuple<int, double, Frame_Base*>* temp= new std::tuple<int, double, Frame_Base*>(idx, interval, msg_frame);
     //buffer the message
     //this->messages_info[idx].push_back(msg_frame);
-    msg_frame->setKind(idx);
+    msg_frame->setKind(rcv_id);
     msg_frame->setName("Add to buffer");
     scheduleAt(simTime() + interval, msg_frame);
     std::cout <<"Current SimTime:\t"<<simTime()<<endl;
@@ -518,13 +517,21 @@ void Node::handleMessage(cMessage *msg)
             else{
                 Frame_Base* msg_frame = check_and_cast<Frame_Base *> (msg);
                 int send_ind = msg_frame->getKind();
-                int ack = (msg_frame->getACK()+ 1)%(1+this->MAX_WINDOW_SIZE);
+                std:: cout << "Node " << this->getIndex() << " received from " << send_ind << " the message ";
+                std::cout << msg->getName() << endl;
+                int ack = msg_frame->getACK();
                 message_vec payload = msg_frame->getPayload();
                 if(this->between(send_ind, ack)){
+                    std::cout << "before sliding window *****" << endl;
+                    std::cout << "window begin: " << this->win_begin[send_ind] << " window end: " << this->win_end[send_ind];
+                    std::cout << " acknowledgement: " << this->acknowledges[send_ind] << endl;
                     while(this->win_begin[send_ind] != ack){
                         this->messages_info[send_ind].pop_front();
                         this->win_begin[send_ind] = (this->win_begin[send_ind] + 1)%(1+this->MAX_WINDOW_SIZE);
                     }
+                    std::cout << " after sliding window *****" << endl;
+                    std::cout << "window begin: " << this->win_begin[send_ind] << " window end: " << this->win_end[send_ind];
+                    std::cout << " acknowledgement: " << this->acknowledges[send_ind] << endl;
                     int cnt = this->current_window_size(send_ind);
                     int qusize = this->messages_info[send_ind].size();
                     this->win_end[send_ind] = (this->win_end[send_ind] + qusize -cnt)%(1+this->MAX_WINDOW_SIZE);
@@ -539,6 +546,9 @@ void Node::handleMessage(cMessage *msg)
                 if(strcmp(msg->getName(), "Receive Message")==0){
                     int r = msg_frame->getFrame_seq();         // TBC
                     if(r == this->acknowledges[send_ind]){
+                        this->error_detect_correct(msg_frame);  // stats
+                        std::string str = this->byte_destuff(msg_frame);
+                        std::cout << "message received " << str << endl;
                         this->acknowledges[send_ind] = (this->acknowledges[send_ind]+1)%(1+this->MAX_WINDOW_SIZE);
                         cMessage * cmsg = new cMessage();
                         cmsg->setName("SEND TIMEOUT");
