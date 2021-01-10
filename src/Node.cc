@@ -531,7 +531,8 @@ void Node::handleMessage(cMessage *msg)
                 std:: cout << "Node " << this->getIndex() << " received from " << send_ind << " the message ";
                 std::cout << msg->getName() << endl;
                 int ack = msg_frame->getACK();
-                message_vec payload = msg_frame->getPayload();
+                // std::cout <<"this is ack:\t"<<ack<<endl;    
+                // message_vec payload = msg_frame->getPayload();
                 if(this->between(send_ind, ack)){
                     std::cout << "before sliding window *****" << endl;
                     std::cout << "window begin: " << this->win_begin[send_ind] << " window end: " << this->win_end[send_ind];

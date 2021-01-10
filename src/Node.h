@@ -44,10 +44,10 @@ class Node : public cSimpleModule
     int win_end[n];
     double last_ack_time[n];
     double last_send_time[n];
-    const double SEND_INTERVAL = 5;
-    const double SEND_TIMEOUT = 15;
-    const double ACK_TIMEOUT = 50;
-    const double NEXT_TIME_STEP = 1;
+    const double SEND_INTERVAL = 0.05;
+    const double SEND_TIMEOUT = 0.15;
+    const double ACK_TIMEOUT = 0.5;
+    const double NEXT_TIME_STEP = 0.001;
     const int MAX_WINDOW_SIZE = 7;
     //messages sent.
     int messages_count = 0;
