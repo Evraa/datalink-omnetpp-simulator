@@ -49,19 +49,24 @@ class Node : public cSimpleModule
     const double ACK_TIMEOUT = 0.5;
     const double NEXT_TIME_STEP = 0.001;
     const int MAX_WINDOW_SIZE = 7;
-    //messages sent.
-    int messages_count = 0;
     //Flags for stuffing
     const char FLAG = 1;
     const char ESC = 2;
     //for distributing messages so that no node receive two consecutive messages
     int last_one = 0;
+    //STAT
+    int messages_count = 0;
+    int ack_count = 0;
+    int nack_count = 0;
+    int retransmit_coutn = 0;
+    int drop_count = 0;
 
   protected:
     virtual void initialize();                                      //Evram
     virtual void orchestrate_msgs(int line_index);                  //Evram
     virtual void buffer_msg (cMessage *msg);                        //Evram
     virtual void schedule_self_msg(int line_index);                 //Evram
+    virtual void finish();                                          //Evram
 
     virtual Frame_Base* byte_stuff (const std::string& msg);        //Sayed
     virtual void add_hamming (Frame_Base* frame);                   //Sayed

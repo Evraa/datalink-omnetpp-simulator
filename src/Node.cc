@@ -43,7 +43,9 @@ void Node::orchestrate_msgs(int line_index)
         rand_rcv = distribution(generator);
     } while(rand_rcv == rand_sender || (nodes_size!=2 && this->last_one == rand_rcv));
 
-    double when_to_send = exponential(1 / par("lambda").doubleValue()) + simTime().dbl();
+    std::uniform_real_distribution<double> rand_distribution (0.0,10.0);
+    double when_to_send = rand_distribution(generator) +simTime().dbl();
+//    double when_to_send = exponential(1 / par("lambda").doubleValue()) + simTime().dbl();
     std::cout <<rand_sender << "\t"<<rand_rcv <<"\t"<<when_to_send<<endl;
     //Fetch Message from file with rounding
     std::ifstream myFile("../msgs/msgs.txt");
@@ -123,6 +125,15 @@ void Node::initialize()
         std::cout << "My name is:\t"<<this->getName() <<"\tMy id is:\t"<<this->getIndex()<<"\tI am awake!"<<endl;
     }
 
+}
+
+void Node::finish()
+{
+    //print it one time only
+    if (std::strcmp(this->getName(),"orchestrator") == 0)
+    {
+
+    }
 }
 
 /**
@@ -385,10 +396,12 @@ void Node::buffer_msg (cMessage *msg)
     //this->messages_info[idx].push_back(msg_frame);
     msg_frame->setKind(rcv_id);
     msg_frame->setName("Add to buffer");
-    scheduleAt(simTime() + interval, msg_frame);
+    // scheduleAt(simTime() + interval, msg_frame);
+    scheduleAt(interval, msg_frame);
+
     std::cout <<"Current SimTime:\t"<<simTime()<<endl;
     std::cout <<"Node:\t"<<this->getIndex()<<"\tScheduled the message:\t"<<message_to_frame<<endl;
-    std::cout <<"To be Sent to:\t"<<rcv_id<<"\tAfter:\t"<<interval<<endl;
+    std::cout <<"To be Sent to:\t"<<rcv_id<<"\tat:\t"<<interval<<endl;
     return;
 }
 
@@ -533,7 +546,7 @@ void Node::handleMessage(cMessage *msg)
                 int ack = msg_frame->getACK();
                 // std::cout <<"this is ack:\t"<<ack<<endl;    
                 // message_vec payload = msg_frame->getPayload();
-                if(this->between(send_ind, ack)){
+                if(this->between(send_ind, ack-1)){
                     std::cout << "before sliding window *****" << endl;
                     std::cout << "window begin: " << this->win_begin[send_ind] << " window end: " << this->win_end[send_ind];
                     std::cout << " acknowledgement: " << this->acknowledges[send_ind] << endl;
