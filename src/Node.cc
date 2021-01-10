@@ -476,6 +476,7 @@ void Node::handleMessage(cMessage *msg)
             if(msg->isSelfMessage()){
                 if(strcmp(msg->getName(), "Add to buffer")==0){
                     int idx = msg->getKind();
+                    std::cout << "Add to buffer *************" <<endl;
                     Frame_Base* msg_frame = check_and_cast<Frame_Base *> (msg);
                     std::cout << "Add to buffer of node " << this->getIndex() << " to send to node " << idx;
                     std::cout << " at time " << simTime() << " the message " << this->byte_destuff(msg_frame) << endl;
@@ -488,8 +489,10 @@ void Node::handleMessage(cMessage *msg)
                     cmsg->setName("Send Message");
                     cmsg->setKind(idx);
                     scheduleAt(simTime()+ this->NEXT_TIME_STEP, cmsg); // TBC
+                    std::cout << "********************" <<endl;
                 }
                 if(strcmp(msg->getName(), "Send Message")==0){
+                    std::cout << "Send Message *************" <<endl;
                     int idx = msg->getKind(), dest_gate = idx;
                     if(this->nxt_to_send[idx] != this->win_end[idx]){
                         std::cout << "next to send from node " << this->getIndex() << " to node "<< idx << " is " << this->nxt_to_send[idx] << endl;
@@ -522,6 +525,7 @@ void Node::handleMessage(cMessage *msg)
                         scheduleAt(simTime() + this->ACK_TIMEOUT, cmsg);   // TBC
                         this->last_send_time[idx] = simTime().dbl();          // TBC
                     }
+                    std::cout << "********************" <<endl;
                 }
                 if(strcmp(msg->getName(), "ACK TIMEOUT")==0){
                     int idx = msg->getKind();
@@ -553,6 +557,7 @@ void Node::handleMessage(cMessage *msg)
                 }
             }
             else{
+                std::cout << "Receive  *************" <<endl;
                 //received a message from node.
                 Frame_Base* msg_frame = check_and_cast<Frame_Base *> (msg);
                 int send_ind = msg_frame->getKind();
@@ -600,6 +605,7 @@ void Node::handleMessage(cMessage *msg)
                         scheduleAt(simTime() + this->SEND_TIMEOUT, cmsg);   // TBC
                     }
                 }
+                std::cout << "********************" <<endl;
             }
         }
     }
