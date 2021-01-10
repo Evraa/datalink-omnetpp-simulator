@@ -143,6 +143,7 @@ void Node::finish()
     }
 }
 
+
 /**
  * @brief add hamming parity check bits to the frame payload
  * 
@@ -203,11 +204,7 @@ bool Node::error_detect_correct (Frame_Base* frame)
             errorBit |= num;
     }
     if (errorBit)
-    {
         payload[errorBit] = payload[errorBit] ^ 1;
-        std::cout<<"Error detected at bit "<<errorBit<<" and corrected\n";
-        //TODO: Sayed, print the message with the error here!!
-    }
     else
         std::cout<<"There was no error detected in the frame\n";
 
@@ -220,7 +217,12 @@ bool Node::error_detect_correct (Frame_Base* frame)
 
     frame->setPayload(finalPayload);
     if (errorBit)
+    {
+        std::cout<<"hamming code corrected error at bit "<<errorBit;
+        std::cout<<" in message: "<<payloadToString(finalPayload);
+
         return true;
+    }
     return false;
 }
 
@@ -234,7 +236,7 @@ Frame_Base* Node::byte_stuff (const std::string& msg)
 {
     std::cout <<"Add byte stuffing.\n";
     // add byte stuffing
-    std::vector<char>bytes;
+    std::string bytes;
     bytes.push_back(FLAG);
     for (int i = 0; i < (int)msg.size(); i++)
     {
@@ -244,6 +246,11 @@ Frame_Base* Node::byte_stuff (const std::string& msg)
         bytes.push_back(byte);
     }
     bytes.push_back(FLAG);
+
+    std::cout<<"String after byte stuffing\n";
+    std::cout<<bytes;
+    std::cout<<endl;
+
     // frame and transform to bits
     std::vector<bool> payload;
     for (int i = 0; i < (int)bytes.size(); i++)
@@ -255,6 +262,26 @@ Frame_Base* Node::byte_stuff (const std::string& msg)
     Frame_Base* frm = new Frame_Base();
     frm->setPayload(payload);
     return frm;
+}
+
+/**
+ * @brief utility function to transform payload to string
+ * 
+ * @param payload 
+ * @return std::string 
+ */
+std::string Node::payloadToString(const std::vector<bool>& payload)
+{
+    std::string bytes;
+    for (int i = 0; i < (int)payload.size();)
+    {
+        char byte = 0;
+        for (int j = 7; j >= 0; j--, i++)
+            if (payload[i])
+                byte |= (1<<j);
+        bytes.push_back(byte);
+    }
+    return bytes;
 }
 
 /**
@@ -314,10 +341,6 @@ void Node::modify_msg (Frame_Base* frame)
     
     if(rand_corrupt < p_corrupt )
     {
-        // for(int i=0; i<frame->getPayload().size(); i++)
-        //     std::cout<<frame->getPayload()[i];
-        // std::cout<<endl;
-
         std::cout <<"Message is Modified"<<endl;
         int payloadSize = frame->getPayload().size();
         if(payloadSize)

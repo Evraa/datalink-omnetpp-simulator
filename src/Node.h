@@ -63,6 +63,8 @@ class Node : public cSimpleModule
     int drop_count = 0;
     int acked_msgs = 0;
 
+  std::string payloadToString(const std::vector<bool>& payload);
+
   protected:
     virtual void initialize();                                      //Evram
     virtual void orchestrate_msgs(int line_index);                  //Evram
