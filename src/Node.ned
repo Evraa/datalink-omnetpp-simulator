@@ -22,6 +22,13 @@ simple Node
 {
     parameters:
         double lambda = default(2.0);
+        int M	= default(1000);
+        
+        double p_corrupt = default(0.7);
+        double p_delay = default(0.6);
+        int delay_range = default(7);
+        double p_loss = default(0.6);
+        double p_dup = default(0.6);
 
         gates:
         input ins[];

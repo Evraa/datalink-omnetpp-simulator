@@ -17,20 +17,17 @@
 
 Define_Module(Node); 
 
-
+/*
+*   When Orchestrator schedule itself a message, it gets notified and call this message, to send an order to a certain node.
+*/
 void Node::orchestrate_msgs(int line_index)
 {
-    //convert string -> vector of bits
+    //construct order pointer.
     Orchestrator_order_Base* order_i = new Orchestrator_order_Base();
 
     //Construct Sender, Receiver and time to send.
     //Parameters
     int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
-    double lower_bound = 2;
-    double upper_bound = getParentModule()->par("arrival_time").doubleValue();  //eg. 20s
-
-    std::uniform_real_distribution<double> unif(lower_bound,upper_bound);
-    std::default_random_engine re;
 
     //Assign Random with constraints
     int rand_sender = uniform(0, nodes_size);    //rand -> 0:7
@@ -39,10 +36,7 @@ void Node::orchestrate_msgs(int line_index)
         rand_rcv = uniform(0, nodes_size);    //rand -> 0:7 != rand_sender "NO SELF MSGS"
     } while(rand_rcv == rand_sender || (nodes_size!=2 && this->last_one == rand_rcv));
 
-    //When to send this message?
-//    double sim_time =  simTime().dbl();
-//    double when_to_send = unif(re) + sim_time;
-    double when_to_send = exponential(1 / par("lambda").doubleValue());
+    double when_to_send = exponential(1 / par("lambda").doubleValue()) + simTime().dbl();
 
     //Fetch Message from file with rounding
     std::ifstream myfile("../msgs/msgs.txt");
@@ -69,6 +63,7 @@ void Node::orchestrate_msgs(int line_index)
     order_i->setRecv_id(rand_rcv);
     order_i->setMessage_body(line);
     order_i->setInterval(when_to_send);
+
     //to avoid two messages at the same time.
     this->last_one = rand_rcv;
 
@@ -123,6 +118,9 @@ void Node::initialize()
 
 }
 
+/*
+*   TODO: Add documentation.
+*/
 void Node::add_haming (Frame_Base* frame)
 {
     std::cout<<"Add hamming\n"<<endl;
@@ -151,6 +149,9 @@ void Node::add_haming (Frame_Base* frame)
     frame->setPayload(hamming);
 }
 
+/*
+*   TODO: Add documentation.
+*/
 bool Node::error_detect_correct (Frame_Base* frame)
 {
     std::vector<bool> payload = frame->getPayload();
@@ -191,6 +192,9 @@ bool Node::error_detect_correct (Frame_Base* frame)
     return false;
 }
 
+/*
+*   TODO: Add documentation.
+*/
 Frame_Base* Node::byte_stuff (const std::string& msg)
 {
     std::cout <<"Add byte stuffing.\n";
@@ -218,6 +222,9 @@ Frame_Base* Node::byte_stuff (const std::string& msg)
     return frm;
 }
 
+/*
+*   TODO: Add documentation.
+*/
 std::string Node::byte_destuff (Frame_Base* frame)
 {
     std::cout <<"Remove byte stuffing.\n";
@@ -252,19 +259,20 @@ std::string Node::byte_destuff (Frame_Base* frame)
     return msg;
 }
 
+/**
+* Corrupting msg follows bernoulli trails to check if corruption will be performed or not
+* since the events are all equally probable so:
+* The generated random number follows uniform distribution
+* The corruption itself follows uniform distribution
+* The Corrupted index(bit) in the payload follows uniform distribution
+*/
 void Node::modify_msg (Frame_Base* frame)
 {
-    /**
-     * Corrupting msg follows bernoulli trails to check if corruption will be performed or not
-     * since the events are all equally probable so:
-     * The generated random number follows uniform distribution
-     * The corruption itself follows uniform distribution
-     * The Corrupted index(bit) in the payload follows uniform distribution
-    */
-
     double rand_corrupt = uniform(0,1);
-    // double p_corrupt = par("p_corrupt").doubleValue();
-    double p_corrupt = 0.7;
+
+    // double p_corrupt = 0.7;
+    double p_corrupt = par("p_corrupt").doubleValue();
+    
     if(rand_corrupt < p_corrupt )
     {
         int payloadSize = frame->getPayload().size();
@@ -281,18 +289,21 @@ void Node::modify_msg (Frame_Base* frame)
     return;
 }
 
+/*
+*   TODO: Add documentation.
+*/
 bool Node::delay_msg (double& delayedTime)
 {
     /*
      * Delaying msg using bernoulli distribution
     */
     double rand_delay = uniform(0,1);
-    // double p_delay = par("p_delay").doubleValue();
-    double p_delay = 0.6;
+    double p_delay = par("p_delay").doubleValue();
+    // double p_delay = 0.6;
 
     if(rand_delay < p_delay )
     {
-        // double rand_delay = uniform(0,1)*par("delay_range").doubleValue();
+        double rand_delay = uniform(0,1)*par("delay_range").doubleValue();
         delayedTime = rand_delay;
         return true;
     }
@@ -300,43 +311,56 @@ bool Node::delay_msg (double& delayedTime)
     return false;
 }
 
+/*
+*   TODO: Add documentation.
+*/
 bool Node::loss_msg ()
 {
     /*
      * losing msg using bernoulli distribution
     */
     double rand_loss = uniform(0,1);
-    // double p_loss = par("p_loss").doubleValue();
-    double p_loss = 0.6;
+    double p_loss = par("p_loss").doubleValue();
+    // double p_loss = 0.6;
 
     if(rand_loss < p_loss )
         return true;
     return false;
 }
 
+/*
+*   TODO: Add documentation.
+*/
 bool Node::dup_msg ()
 {
     /*
      * duplicating msg using bernoulli distribution
     */
     double rand_dup = uniform(0,1);
-    // double p_dup = par("p_dup").doubleValue();
-    double p_dup = 0.65;
+    double p_dup = par("p_dup").doubleValue();
+    // double p_dup = 0.65;
 
     if(rand_dup < p_dup )
         return true;
     return false;
 }
 
+/*
+*   A regular node received an order from orchestrator, so it fetches the order information.
+*   adds stuffing and hamming.
+*   and the node sends itself a message, notifying itself at the time -that the message should be sent at- 
+*   to be appended to the buffer, and to be sent, if the window size allows it.
+*/
 void Node::buffer_msg (cMessage *msg)
 {
-    //A regular node received an order from orchestrator.
+    //up cast the message.
     Orchestrator_order_Base* order_rcv = check_and_cast<Orchestrator_order_Base *> (msg);
     //Sanity check
     assert(order_rcv->getSender_id() == this->getIndex());
     //Message info.
     int rcv_id = order_rcv->getRecv_id();
     int idx = rcv_id;
+                                            //WHY DID KAREEM REMOVED THIS!
     double interval = order_rcv->getInterval();
     std::string message_to_frame = order_rcv->getMessage_body();
 
@@ -344,6 +368,7 @@ void Node::buffer_msg (cMessage *msg)
     Frame_Base* msg_frame = this->byte_stuff(message_to_frame);
     //add hamming
     this->add_haming(msg_frame);
+                                            //YOU DON'T NEED THE TUPLE
     //add a tuple for my new message                                                    //PS. I added direct dest gate.
     std::tuple<int, double, Frame_Base*>* temp= new std::tuple<int, double, Frame_Base*>(idx, interval, msg_frame);
     //buffer the message
@@ -357,6 +382,9 @@ void Node::buffer_msg (cMessage *msg)
     return;
 }
 
+/*
+*   Utitlity function used in go-back-n algorithm.
+*/
 bool Node::between(int idx, int b){
     int c = this->win_end[idx], a = this->win_begin[idx];
     if(c >= a)
@@ -364,7 +392,9 @@ bool Node::between(int idx, int b){
     return b < c || b >= a;
 }
 
-
+/*
+*   Utitlity function used in go-back-n algorithm.
+*/
 int Node::current_window_size(int idx){
     int ret = this->win_end[idx] - this->win_begin[idx];
     if(this->win_begin[idx] <= this->win_end[idx])
@@ -372,7 +402,9 @@ int Node::current_window_size(int idx){
     return this->MAX_WINDOW_SIZE + 1 + ret;
 }
 
-
+/*
+*   TODO: Add documentation.
+*/
 void Node::handleMessage(cMessage *msg)
 {
     if (std::strcmp(this->getName(),"orchestrator") == 0)
@@ -408,6 +440,8 @@ void Node::handleMessage(cMessage *msg)
         else
         {
             if(msg->isSelfMessage()){
+                //TODO: IMP YA KAREEM 
+                //get name will return either "Orchestrator" or "node"
                 if(strcmp(msg->getName(), "Add to buffer")==0){
                     int idx = msg->getKind();
                     Frame_Base* msg_frame = check_and_cast<Frame_Base *> (msg);
