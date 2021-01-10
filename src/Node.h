@@ -80,7 +80,7 @@ class Node : public cSimpleModule
     virtual int current_window_size(int idx);                       //Kareem
 
     virtual void modify_msg(Frame_Base *frame);                     //Omar
-    virtual bool delay_msg(double &delayed_time);                   //Omar
+    virtual double delay_msg();                   //Omar
     virtual bool loss_msg();                                        //Omar
     virtual bool dup_msg();                                         //Omar
 

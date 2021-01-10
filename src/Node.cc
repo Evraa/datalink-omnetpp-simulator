@@ -336,7 +336,7 @@ void Node::modify_msg (Frame_Base* frame)
 /*
 *  Delaying msg using bernoulli distribution
 */
-bool Node::delay_msg (double& delayedTime)
+double Node::delay_msg (double& delayedTime)
 {
     double rand_delay = uniform(0,1);
     double p_delay = par("p_delay").doubleValue();
@@ -345,12 +345,9 @@ bool Node::delay_msg (double& delayedTime)
     if(rand_delay < p_delay )
     {
         std::cout <<"Message is Delayed"<<endl;
-        double rand_delay = uniform(0,1)*par("delay_range").doubleValue();
-        delayedTime = rand_delay;
-        return true;
+        return uniform(0,1)*par("delay_range").doubleValue();
     }
-    delayedTime = 0;
-    return false;
+    return 0;
 }
 
 /*
