@@ -28,25 +28,23 @@ void Node::orchestrate_msgs(int line_index)
     //Construct Sender, Receiver and time to send.
     //Parameters
     int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
-
-    //
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator (seed);
     std::uniform_int_distribution<int> distribution(1,nodes_size-1);
 
     //Assign Random with constraints
-//    int rand_sender = uniform(0,1) * nodes_size;    //rand -> 0:7
     int rand_sender = distribution(generator);
     int rand_rcv = 0;
     do{
-//        rand_rcv = uniform(0,1) * nodes_size;   //rand -> 0:7 != rand_sender "NO SELF MSGS"
+
         rand_rcv = distribution(generator);
     } while(rand_rcv == rand_sender || (nodes_size!=2 && this->last_one == rand_rcv));
 
     std::uniform_real_distribution<double> rand_distribution (0.0,10.0);
     double when_to_send = rand_distribution(generator) +simTime().dbl();
-//    double when_to_send = exponential(1 / par("lambda").doubleValue()) + simTime().dbl();
-    std::cout <<rand_sender << "\t"<<rand_rcv <<"\t"<<when_to_send<<endl;
+
+    std::cout <<"Orchestrator:\t"<<"Sender:\t"<<rand_sender << "\tReceiver:\t"<<rand_rcv <<"\tat\t"<<when_to_send<<endl;
+
     //Fetch Message from file with rounding
     std::ifstream myFile("../msgs/msgs.txt");
     std::string line;
@@ -122,7 +120,6 @@ void Node::initialize()
             this->win_begin[i] = 0;
             this->win_end[i] = 0;
         }
-        std::cout << "My name is:\t"<<this->getName() <<"\tMy id is:\t"<<this->getIndex()<<"\tI am awake!"<<endl;
     }
 
 }
@@ -206,6 +203,7 @@ bool Node::error_detect_correct (Frame_Base* frame)
     {
         payload[errorBit] = payload[errorBit] ^ 1;
         std::cout<<"Error detected at bit "<<errorBit<<" and corrected\n";
+        //TODO: Sayed, print the message with the error here!!
     }
     else
         std::cout<<"There was no error detected in the frame\n";
@@ -313,6 +311,7 @@ void Node::modify_msg (Frame_Base* frame)
     
     if(rand_corrupt < p_corrupt )
     {
+        std::cout <<"Message is Modified"<<endl;
         int payloadSize = frame->getPayload().size();
         if(payloadSize)
         {
@@ -338,6 +337,7 @@ bool Node::delay_msg (double& delayedTime)
 
     if(rand_delay < p_delay )
     {
+        std::cout <<"Message is Delayed"<<endl;
         double rand_delay = uniform(0,1)*par("delay_range").doubleValue();
         delayedTime = rand_delay;
         return true;
@@ -357,6 +357,7 @@ bool Node::loss_msg ()
 
     if(rand_loss < p_loss )
         {
+            std::cout <<"Message is Dropped"<<endl;
             this->drop_count++;
             return true;
         }
@@ -373,7 +374,10 @@ bool Node::dup_msg ()
     // double p_dup = 0.65;
 
     if(rand_dup < p_dup )
-        return true;
+        {
+            std::cout <<"Message is Duplicated"<<endl;
+            return true;
+        }
     return false;
 }
 
@@ -445,6 +449,7 @@ void Node::handleMessage(cMessage *msg)
         Orchestrator_order_Base* msg_rcv = check_and_cast<Orchestrator_order_Base *> (msg);
         int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
         int kind = msg_rcv->getKind();
+
         for (int i=0; i<nodes_size; i++)
             orchestrate_msgs(kind++);
 
