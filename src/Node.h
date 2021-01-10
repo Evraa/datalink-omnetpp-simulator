@@ -35,8 +35,6 @@ using namespace omnetpp;
  */
 class Node : public cSimpleModule
 {
-    //A public Q that contains pointers to tuples
-    //each tuple has an int (receiver id) and a pointer to the Frame to be sent to.
     static const int n = 8;
     std::deque <Frame_Base*> messages_info[n];
     int acknowledges[n];
@@ -49,27 +47,35 @@ class Node : public cSimpleModule
     const double SEND_TIMEOUT = 15;
     const double ACK_TIMEOUT = 50;
     const double NEXT_TIME_STEP = 1;
-    const char FLAG = 1;
     const int MAX_WINDOW_SIZE = 7;
+    //messages sent.
+    int messages_count = 0;
+    //Flags for stuffing
+    const char FLAG = 1;
     const char ESC = 2;
-    int last_one;
+    //for distributing messages so that no node receive two consecutive messages
+    int last_one = 0;
 
   protected:
     virtual void initialize();                                      //Evram
     virtual void orchestrate_msgs(int line_index);                  //Evram
     virtual void buffer_msg (cMessage *msg);                        //Evram
     virtual void schedule_self_msg(int line_index);                 //Evram
+
     virtual Frame_Base* byte_stuff (const std::string& msg);        //Sayed
     virtual void add_haming (Frame_Base* frame);                    //Sayed
+    virtual bool error_detect_correct (Frame_Base* frame);          //Sayed
+    virtual std::string byte_destuff (Frame_Base* frame);           //Sayed
+
     virtual void handleMessage(cMessage *msg);                      //Kareem
+    virtual bool between(int idx, int val);                         //Kareem
+    virtual int current_window_size(int idx);                       //Kareem
+
     virtual void modify_msg(Frame_Base *frame);                     //Omar
     virtual bool delay_msg(double &delayed_time);                   //Omar
     virtual bool loss_msg();                                        //Omar
     virtual bool dup_msg();                                         //Omar
-    virtual std::string byte_destuff (Frame_Base* frame);           //Sayed
-    virtual bool error_detect_correct (Frame_Base* frame);          //Sayed
-    virtual bool between(int idx, int val);
-    virtual int current_window_size(int idx);
+
 };
 
 #endif

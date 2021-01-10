@@ -76,24 +76,40 @@ void Node::orchestrate_msgs(int line_index)
     send(order_i, "outs", rand_sender);
     return;
 }
+
+/*
+* Orchestrator utility function to remind itself after some interval to propagate a message.
+* If this ain't an Orch. it returns, and if we reached messages limit, don't add more.
+*/
 void Node::schedule_self_msg(int line_index)
 {
     if (strcmp(this->getName(), "orchestrator")!=0)
         return;
 
-    this->last_one = 0;
+    if (this->par("M").intValue() == this->messages_count)
+        return;
+
     Orchestrator_order_Base* tmp = new Orchestrator_order_Base();
     tmp->setKind(line_index);
-
     double interval = exponential(1 / par("lambda").doubleValue());
     scheduleAt(simTime() + interval, tmp);
+    this->messages_count++;
 }
 
+/*
+* Init. function.
+* Setting some parameters.
+* Scheduling the first order for orchestrator to work on.
+*/
 void Node::initialize()
 {
 
     if (std::strcmp(this->getName(),"orchestrator") == 0)
-        schedule_self_msg(1);
+        {
+            this->last_one = 0;
+            this->messages_count = 0;
+            schedule_self_msg(1);
+        }
     else
     {
         for(int i = 0; i < n; ++i){
