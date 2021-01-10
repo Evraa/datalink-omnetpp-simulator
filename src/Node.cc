@@ -116,11 +116,14 @@ void Node::initialize()
         }
     else
     {
-        for(int i = 0; i < n; ++i){
-            this->acknowledges[i] = 0;
-            this->nxt_to_send[i] = 0;
-            this->win_begin[i] = 0;
-            this->win_end[i] = 0;
+        for(int i = 0; i < n; ++i)
+        {
+            for(int j = 0; j < n; ++j){
+                this->acknowledges[j][i] = 0;
+                this->nxt_to_send[j][i] = 0;
+                this->win_begin[j][i] = 0;
+                this->win_end[j][i] = 0;
+            }
         }
         std::cout << "My name is:\t"<<this->getName() <<"\tMy id is:\t"<<this->getIndex()<<"\tI am awake!"<<endl;
     }
@@ -419,7 +422,8 @@ void Node::buffer_msg (cMessage *msg)
 *   Utility function used in go-back-n algorithm.
 */
 bool Node::between(int idx, int b){
-    int c = this->win_end[idx], a = this->win_begin[idx];
+    int myind = this->getIndex();
+    int c = this->win_end[myind][idx], a = this->win_begin[myind][idx];
     if(c >= a)
         return b >= a && b < c;
     return b < c || b >= a;
@@ -429,8 +433,9 @@ bool Node::between(int idx, int b){
 *   Utility function used in go-back-n algorithm.
 */
 int Node::current_window_size(int idx){
-    int ret = this->win_end[idx] - this->win_begin[idx];
-    if(this->win_begin[idx] <= this->win_end[idx])
+    int myind = this->getIndex();
+    int ret = this->win_end[myind][idx] - this->win_begin[myind][idx];
+    if(this->win_begin[myind][idx] <= this->win_end[myind][idx])
         return ret;
     return this->MAX_WINDOW_SIZE + 1 + ret;
 }
@@ -453,6 +458,12 @@ void Node::handleMessage(cMessage *msg)
     }
     else
     {
+        int myind = this->getIndex();
+        std::cout << "handle message ********" << endl;
+        std::cout << this->getIndex() << " " << msg->getName() << endl;
+        for(int i = 0; i < n; ++i)
+            std::cout << nxt_to_send[myind][i] << " ";
+        std::cout << endl << "****************************" << endl;
         //Regular Node
         if (strcmp(msg->getSenderModule()->getName(), "orchestrator")==0)
         {
@@ -474,6 +485,7 @@ void Node::handleMessage(cMessage *msg)
             //Here lies the sending logic..
 
          }
+         // b   n   e
         else
         {
             if(msg->isSelfMessage()){
@@ -483,9 +495,9 @@ void Node::handleMessage(cMessage *msg)
                     Frame_Base* msg_frame = check_and_cast<Frame_Base *> (msg);
                     std::cout << "Add to buffer of node " << this->getIndex() << " to send to node " << idx;
                     std::cout << " at time " << simTime() << " the message " << this->byte_destuff(msg_frame) << endl;
-                    this->messages_info[idx].push_back(msg_frame);
-                    this->win_end[idx] = (this->win_end[idx]+1);
-                    std::cout << this->win_end[idx] << endl;
+                    this->messages_info[myind][idx].push_back(msg_frame);
+                    this->win_end[myind][idx] = (this->win_end[myind][idx]+1);
+                    std::cout << this->win_end[myind][idx] << endl;
                     cMessage * cmsg = new cMessage();
                     cmsg->setName("Send Message");
                     cmsg->setKind(idx);
@@ -495,24 +507,24 @@ void Node::handleMessage(cMessage *msg)
                 if(strcmp(msg->getName(), "Send Message")==0){
                     std::cout << "Send Message *************" <<endl;
                     int idx = msg->getKind(), dest_gate = idx;
-                    if(this->nxt_to_send[idx] != this->win_end[idx]){
-                        std::cout << "next to send from node " << this->getIndex() << " to node "<< idx << " is " << this->nxt_to_send[idx] << endl;
-                        std::cout << "window end is " << this->win_end[idx] << endl;
+                    if(this->nxt_to_send[myind][idx] < this->win_end[myind][idx]){
+                        std::cout << "next to send from node " << this->getIndex() << " to node "<< idx << " is " << this->nxt_to_send[myind][idx] << endl;
+                        std::cout << "window end is " << this->win_end[myind][idx] << endl;
                         delete msg;
                         if(idx > this->getIndex())
                             dest_gate--;
-                        int to_send = this->nxt_to_send[idx];
-                        Frame_Base* msg_frame = this->messages_info[idx][to_send];
-                        msg_frame->setACK(this->acknowledges[idx]);
+                        int to_send = this->nxt_to_send[myind][idx];
+                        Frame_Base* msg_frame = this->messages_info[myind][idx][to_send];
+                        msg_frame->setACK(this->acknowledges[myind][idx]);
                         msg_frame->setName("Receive Message");
                         msg_frame->setKind(this->getIndex());
-                        msg_frame->setFrame_seq(this->nxt_to_send[idx]);
+                        msg_frame->setFrame_seq(this->nxt_to_send[myind][idx]);
                         std::cout << "Send message from" << this->getIndex() << " to node " << idx << " at dest gate" << dest_gate;
                         std::cout << " at time " << simTime() << " the message " << this->byte_destuff(msg_frame) << endl;
                         send(msg_frame, "outs", dest_gate);
-                        this->nxt_to_send[idx] = (this->nxt_to_send[idx] + 1);
-                        std::cout <<"Next to send: "<<this->nxt_to_send[idx]<<endl;
-                        if(this->nxt_to_send[idx] != this->win_end[idx]){
+                        this->nxt_to_send[myind][idx] = (this->nxt_to_send[myind][idx] + 1);
+                        std::cout <<"Next to send: "<<this->nxt_to_send[myind][idx]<<endl;
+                        if(this->nxt_to_send[myind][idx] != this->win_end[myind][idx]){
                             cMessage * cmsg = new cMessage();
                             cmsg->setName("Send Message");
                             cmsg->setKind(idx);
@@ -522,16 +534,16 @@ void Node::handleMessage(cMessage *msg)
                         cmsg->setName("ACK TIMEOUT");
                         cmsg->setKind(idx);
                         scheduleAt(simTime() + this->ACK_TIMEOUT, cmsg);   // TBC
-                        this->last_send_time[idx] = simTime().dbl();          // TBC
+                        this->last_send_time[myind][idx] = simTime().dbl();          // TBC
                     }
                     std::cout << "********************" <<endl;
                 }
                 if(strcmp(msg->getName(), "ACK TIMEOUT")==0){
                     int idx = msg->getKind();
                     double curTime = simTime().dbl() - this->ACK_TIMEOUT;
-                    if(this->last_ack_time[idx] < curTime){
-                        this->nxt_to_send[idx] = this->win_begin[idx];
-                        if(this->nxt_to_send[idx] != this->win_end[idx]){
+                    if(this->last_ack_time[myind][idx] < curTime){
+                        this->nxt_to_send[myind][idx] = this->win_begin[myind][idx];
+                        if(this->nxt_to_send[myind][idx] != this->win_end[myind][idx]){
                             cMessage * cmsg = new cMessage();
                             cmsg->setName("Send Message");
                             cmsg->setKind(idx);
@@ -542,16 +554,16 @@ void Node::handleMessage(cMessage *msg)
                 if(strcmp(msg->getName(), "SEND TIMEOUT")==0){
                     int idx = msg->getKind(), dest_gate = idx;
                     double curTime = simTime().dbl() - this->SEND_TIMEOUT;
-                    if(this->last_send_time[idx] < curTime){
+                    if(this->last_send_time[myind][idx] < curTime){
                         Frame_Base* msg_frame = new Frame_Base();
-                        msg_frame->setACK(this->acknowledges[idx]);
+                        msg_frame->setACK(this->acknowledges[myind][idx]);
                         msg_frame->setName("Receive ACK");
                         msg_frame->setKind(this->getIndex());
                         if(idx > this->getIndex())
                             dest_gate--;
                         //this needs to be send_delay
                         send(msg_frame, "outs", dest_gate);
-                        this->last_send_time[idx] = simTime().dbl();          // TBC
+                        this->last_send_time[myind][idx] = simTime().dbl();          // TBC
                     }
                 }
             }
@@ -565,22 +577,22 @@ void Node::handleMessage(cMessage *msg)
                 int ack = msg_frame->getACK();
                 // std::cout <<"this is ack:\t"<<ack<<endl;    
                 // message_vec payload = msg_frame->getPayload();
-                std::cout << win_begin[send_ind] << " " << win_end[send_ind] << " " << nxt_to_send[send_ind];
+                std::cout << win_begin[myind][send_ind] << " " << win_end[myind][send_ind] << " " << nxt_to_send[myind][send_ind];
                 if(this->between(send_ind, ack-1))
                 {
                     std::cout << "before sliding window *****" << endl;
-                    std::cout << "window begin: " << this->win_begin[send_ind] << " window end: " << this->win_end[send_ind];
-                    std::cout << " acknowledgement: " << this->acknowledges[send_ind] << endl;
-                    while(this->win_begin[send_ind] < ack){
-                        this->win_begin[send_ind] = (this->win_begin[send_ind] + 1);
+                    std::cout << "window begin: " << this->win_begin[myind][send_ind] << " window end: " << this->win_end[myind][send_ind];
+                    std::cout << " acknowledgement: " << this->acknowledges[myind][send_ind] << endl;
+                    while(this->win_begin[myind][send_ind] < ack){
+                        this->win_begin[myind][send_ind] = (this->win_begin[myind][send_ind] + 1);
                         //for stat.
                         this->acked_msgs++;
                     }
-                    this->last_ack_time[send_ind] = simTime().dbl();          // TBC
+                    this->last_ack_time[myind][send_ind] = simTime().dbl();          // TBC
                     std::cout << " after sliding window *****" << endl;
-                    std::cout << "window begin: " << this->win_begin[send_ind] << " window end: " << this->win_end[send_ind];
-                    std::cout << " acknowledgement: " << this->acknowledges[send_ind] << endl;
-                    if(this->nxt_to_send[send_ind] != this->win_end[send_ind]){
+                    std::cout << "window begin: " << this->win_begin[myind][send_ind] << " window end: " << this->win_end[myind][send_ind];
+                    std::cout << " acknowledgement: " << this->acknowledges[myind][send_ind] << endl;
+                    if(this->nxt_to_send[myind][send_ind] != this->win_end[myind][send_ind]){
                         cMessage * cmsg = new cMessage();
                         cmsg->setName("Send Message");
                         cmsg->setKind(send_ind);
@@ -589,11 +601,11 @@ void Node::handleMessage(cMessage *msg)
                 }
                 if(strcmp(msg->getName(), "Receive Message")==0){
                     int r = msg_frame->getFrame_seq();         // TBC
-                    if(r == this->acknowledges[send_ind]){
+                    if(r == this->acknowledges[myind][send_ind]){
                         this->error_detect_correct(msg_frame);  // stats
                         std::string str = this->byte_destuff(msg_frame);
                         std::cout << "message received " << str << endl;
-                        this->acknowledges[send_ind] = (this->acknowledges[send_ind]+1);
+                        this->acknowledges[myind][send_ind] = (this->acknowledges[myind][send_ind]+1);
                         cMessage * cmsg = new cMessage();
                         cmsg->setName("SEND TIMEOUT");
                         cmsg->setKind(send_ind);

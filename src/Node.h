@@ -37,13 +37,13 @@ using namespace omnetpp;
 class Node : public cSimpleModule
 {
     static const int n = 8;
-    std::deque <Frame_Base*> messages_info[n];
-    int acknowledges[n];
-    int nxt_to_send[n];
-    int win_begin[n];
-    int win_end[n];
-    double last_ack_time[n];
-    double last_send_time[n];
+    std::deque <Frame_Base*> messages_info[n][n];
+    int acknowledges[n][n];
+    int nxt_to_send[n][n];
+    int win_begin[n][n];
+    int win_end[n][n];
+    double last_ack_time[n][n];
+    double last_send_time[n][n];
 
     const double SEND_INTERVAL = 0.000005;
     const double SEND_TIMEOUT = 0.15;
