@@ -472,10 +472,13 @@ void Node::handleMessage(cMessage *msg)
                 if(strcmp(msg->getName(), "Add to buffer")==0){
                     int idx = msg->getKind();
                     Frame_Base* msg_frame = check_and_cast<Frame_Base *> (msg);
+                    std::cout << "Add to buffer of node " << this->getIndex() << " to send to node " << idx;
+                    std::cout << " at time " << simTime() << " the message " << this->byte_destuff(msg_frame) << endl;
                     this->messages_info[idx].push_back(msg_frame);
                     if(this->current_window_size(idx) < this->MAX_WINDOW_SIZE){
                         this->win_end[idx] = (this->win_end[idx]+1)%(1+this->MAX_WINDOW_SIZE);
                     }
+                    std::cout << this->win_end[idx] << endl;
                     cMessage * cmsg = new cMessage();
                     cmsg->setName("Send Message");
                     cmsg->setKind(idx);
@@ -484,6 +487,8 @@ void Node::handleMessage(cMessage *msg)
                 if(strcmp(msg->getName(), "Send Message")==0){
                     int idx = msg->getKind(), dest_gate = idx;
                     if(this->nxt_to_send[idx] != this->win_end[idx]){
+                        std::cout << "next to send from node " << this->getIndex() << " to node "<< idx << " is " << this->nxt_to_send[idx] << endl;
+                        std::cout << "window end is " << this->win_end[idx] << endl;
                         delete msg;
                         if(idx > this->getIndex())
                             dest_gate--;
@@ -495,6 +500,9 @@ void Node::handleMessage(cMessage *msg)
                         msg_frame->setName("Receive Message");
                         msg_frame->setKind(this->getIndex());
                         msg_frame->setFrame_seq(this->nxt_to_send[idx]);
+                        std::cout << "Send message from" << this->getIndex() << " to node " << idx << " at dest gate" << dest_gate;
+                        std::cout << " at time " << simTime() << " the message " << this->byte_destuff(msg_frame) << endl;
+                        send(msg_frame, "outs", dest_gate);
                         this->nxt_to_send[idx] = (this->nxt_to_send[idx] + 1)%(1+this->MAX_WINDOW_SIZE);
                         if(this->nxt_to_send[idx] != this->win_end[idx]){
                             cMessage * cmsg = new cMessage();
@@ -505,7 +513,6 @@ void Node::handleMessage(cMessage *msg)
                         cMessage * cmsg = new cMessage();
                         cmsg->setName("ACK TIMEOUT");
                         cmsg->setKind(idx);
-                        send(msg_frame, "outs", dest_gate);
                         scheduleAt(simTime() + this->ACK_TIMEOUT, cmsg);   // TBC
                         this->last_send_time[idx] = simTime().dbl();          // TBC
                     }
