@@ -33,12 +33,12 @@ void Node::orchestrate_msgs(int line_index)
     std::uniform_int_distribution<int> distribution(1,nodes_size-1);
 
     //Assign Random with constraints
-    int rand_sender = distribution(generator);
+    int rand_sender = 0;
     int rand_rcv = 0;
     do{
-
         rand_rcv = distribution(generator);
-    } while(rand_rcv == rand_sender || (nodes_size!=2 && this->last_one == rand_rcv));
+        rand_sender = distribution(generator);
+    } while(rand_rcv == rand_sender || (nodes_size!=2 && this->received[rand_rcv]==1));
 
     std::uniform_real_distribution<double> rand_distribution (0.0,10.0);
     double when_to_send = rand_distribution(generator) +simTime().dbl();
@@ -72,8 +72,8 @@ void Node::orchestrate_msgs(int line_index)
     order_i->setInterval(when_to_send);
 
     //to avoid two messages at the same time.
-    this->last_one = rand_rcv;
-
+//    this->last_one = rand_rcv;
+    this->received[rand_rcv] = 1;
     //send it to rand_sender
     send(order_i, "outs", rand_sender);
     return;
@@ -96,6 +96,7 @@ void Node::schedule_self_msg(int line_index)
     double interval = exponential(1 / par("lambda").doubleValue());
     scheduleAt(simTime() + interval, tmp);
     this->messages_count++;
+
 }
 
 /*
@@ -110,15 +111,20 @@ void Node::initialize()
         {
             this->last_one = 0;
             this->messages_count = 0;
+            int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
+            this->received = new int [nodes_size];
+            for (int i=0; i<nodes_size; i++)
+                this->received[i] = -1;
             schedule_self_msg(1);
         }
     else
     {
         //init parameters from omnetpp.ini file.
+        //ASK KAREEM 'BOUT THESE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1111
         this->SEND_TIMEOUT = par("SEND_TIMEOUT").doubleValue();
         this->ACK_TIMEOUT = par("ACK_TIMEOUT").doubleValue();
         this->MAX_WINDOW_SIZE = par("MAX_WINDOW_SIZE").intValue();
-
+//        this->n = this->getParentModule()->par("N").intValue();
         //start these arrayes at zero.
         for(int i = 0; i < n; ++i)
         {
@@ -139,13 +145,21 @@ void Node::finish()
     if (std::strcmp(this->getName(),"orchestrator") == 0)
     {
         std::cout <<"\n\n*****\t\tEnd of Transmissions*****\n\n";
-        std::cout <<"Total Frames Created by Orchestrator:\t" <<this->messages_count<<endl;
-        std::cout <<"Total ACKs Sent by Nodes:\t" <<this->ack_count<<endl;
-        std::cout <<"Total NACKs Sent by Nodes:\t" <<this->nack_count<<endl;
-        std::cout <<"Total Retransmissions Sent:\t" <<this->retransmit_count<<endl;
-        std::cout <<"Total Dropped Frames:\t" <<this->drop_count<<endl;
-        double total_msgs =drop_count+retransmit_count+nack_count+ack_count+messages_count;
-        std::cout <<"\n\nUtility:\t"<<this->messages_count / total_msgs<<endl;
+        int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
+        std::cout <<"Total Frames Created by Orchestrator:\t" <<this->messages_count*(nodes_size-1)<<endl;
+    }
+    else
+    {
+        std::cout <<"Node: "<<this->getIndex()<<" Log.\n";
+        std::cout <<"\t\tFrames Dropped: \t"<<this->drop_count<<endl;
+        std::cout <<"\t\tFrames Retransmitted: \t"<<this->retransmit_count<<endl;
+        std::cout <<"\t\tFrames Duplicated: \t"<<this->dup_count<<endl;
+        std::cout <<"\t\tACKs Received: \t\t"<<this->ack_count<<endl;
+        std::cout <<"\t\tUseful Messages: \t"<<this->messages_count<<endl;
+        if (this->messages_count!=0)
+            std::cout <<"\t\tUtility: \t"<<(double)this->messages_count /(messages_count+ack_count+dup_count+retransmit_count) <<endl;
+        else
+            std::cout <<"\t\tUtility: No message to calculate utility"<<endl;
     }
 }
 
@@ -366,8 +380,10 @@ void Node::modify_msg (Frame_Base* frame)
 /*
 *  Delaying msg using bernoulli distribution
 */
-double Node::delay_msg ()
+double Node::delay_msg (bool dup)
 {
+    if (!dup)
+        this->messages_count++;
     double rand_delay = uniform(0,1);
     double p_delay = par("p_delay").doubleValue();
     // double p_delay = 0.6;
@@ -393,7 +409,6 @@ bool Node::loss_msg ()
     if(rand_loss < p_loss )
         {
             std::cout <<"Message is Dropped"<<endl;
-            this->drop_count++;
             return true;
         }
     return false;
@@ -439,14 +454,9 @@ void Node::buffer_msg (cMessage *msg)
     //add hamming
     this->add_hamming(msg_frame);
     this->modify_msg(msg_frame);
-                                            //YOU DON'T NEED THE TUPLE
-    //add a tuple for my new message                                                    //PS. I added direct dest gate.
-    //std::tuple<int, double, Frame_Base*>* temp= new std::tuple<int, double, Frame_Base*>(idx, interval, msg_frame);
-    //buffer the message
-    //this->messages_info[idx].push_back(msg_frame);
+                                            
     msg_frame->setKind(rcv_id);
     msg_frame->setName("Add to buffer");
-    // scheduleAt(simTime() + interval, msg_frame);
     scheduleAt(interval, msg_frame);
 
     std::cout <<"Current SimTime:\t"<<simTime()<<endl;
@@ -488,9 +498,10 @@ void Node::handleMessage(cMessage *msg)
         int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
         int kind = msg_rcv->getKind();
 
-        for (int i=0; i<nodes_size; i++)
+        for (int i=0; i<nodes_size-1; i++)
             orchestrate_msgs(kind++);
-
+        for (int i=0; i<nodes_size; i++)
+            this->received[i] = -1;
         this->schedule_self_msg(kind);
         return;
     }
@@ -541,9 +552,8 @@ void Node::handleMessage(cMessage *msg)
                         msg_frame->setKind(this->getIndex());
                         msg_frame->setFrame_seq(this->nxt_to_send[myind][idx]);
                         if(!this->loss_msg()){
-                            sendDelayed(msg_frame, this->delay_msg(),"outs", dest_gate);
+                            sendDelayed(msg_frame, this->delay_msg(false),"outs", dest_gate);
                             if(this->dup_msg()){
-                                this->dup_count++;
                                 Frame_Base* sg_frame = new Frame_Base();
                                 sg_frame->setPayload(temp_frame->getPayload());
                                 sg_frame->setACK(this->acknowledges[myind][idx]);
@@ -551,6 +561,7 @@ void Node::handleMessage(cMessage *msg)
                                 sg_frame->setKind(this->getIndex());
                                 sg_frame->setFrame_seq(this->nxt_to_send[myind][idx]);
                                 sendDelayed(sg_frame, this->delay_msg(),"outs", dest_gate);
+                                this->dup_count++;
                             }
                         }
                         else{
@@ -597,7 +608,6 @@ void Node::handleMessage(cMessage *msg)
                         msg_frame->setKind(this->getIndex());
                         if(idx > this->getIndex())
                             dest_gate--;
-                        //this needs to be send_delay
                         sendDelayed(msg_frame, 0,"outs", dest_gate);
                         this->last_send_time[myind][idx] = simTime().dbl();          // TBC
                     }
@@ -617,7 +627,7 @@ void Node::handleMessage(cMessage *msg)
                     while(this->win_begin[myind][send_ind] < ack){
                         this->win_begin[myind][send_ind] = (this->win_begin[myind][send_ind] + 1);
                         //for stat.
-                        this->acked_msgs++;
+                        this->ack_count++;
                     }
                     this->last_ack_time[myind][send_ind] = simTime().dbl();          // TBC
                     if(this->nxt_to_send[myind][send_ind] != this->win_end[myind][send_ind]){

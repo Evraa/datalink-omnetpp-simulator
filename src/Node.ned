@@ -30,9 +30,9 @@ simple Node
         double p_loss = default(0.6);
         double p_dup = default(0.6);
         
-        double send_timeout = defaule(0.3);
-        double ack_timeout = defaule(0.8);
-        int max_window_size = defaule(7);
+        double SEND_TIMEOUT = default(0.3);
+        double ACK_TIMEOUT = default(0.8);
+        int MAX_WINDOW_SIZE = default(7);
 
         gates:
         input ins[];

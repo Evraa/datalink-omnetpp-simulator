@@ -44,28 +44,30 @@ class Node : public cSimpleModule
     int win_end[n][n];
     double last_ack_time[n][n];
     double last_send_time[n][n];
-
     const double SEND_INTERVAL = 0.0005;
     const double NEXT_TIME_STEP = 0.001;
-
     //fetch from parameters at init
-    const double SEND_TIMEOUT;
-    const double ACK_TIMEOUT;
-    const int MAX_WINDOW_SIZE;
+    double SEND_TIMEOUT;
+    double ACK_TIMEOUT;
+    int MAX_WINDOW_SIZE;
+
+
 
     //Flags for stuffing
     const char FLAG = 1;
     const char ESC = 2;
     //for distributing messages so that no node receive two consecutive messages
     int last_one = 0;
+    int * received;
+
     //STAT
-    int messages_count = 0;
+    int messages_count = 0; //orch. only, needs to be multiplied by 5
     int ack_count = 0;
+    int drop_count = 0;
+    int retransmit_count = 0;
     int dup_count = 0;
     int nack_count = 0;
-    int retransmit_count = 0;
-    int drop_count = 0;
-    int acked_msgs = 0;
+//    int acked_msgs = 0;
 
   std::string payloadToString(const std::vector<bool>& payload);
 
@@ -86,7 +88,7 @@ class Node : public cSimpleModule
     virtual int current_window_size(int idx);                       //Kareem
 
     virtual void modify_msg(Frame_Base *frame);                     //Omar
-    virtual double delay_msg();                   //Omar
+    virtual double delay_msg(bool dup=true);                        //Omar
     virtual bool loss_msg();                                        //Omar
     virtual bool dup_msg();                                         //Omar
 
