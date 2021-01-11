@@ -46,10 +46,13 @@ class Node : public cSimpleModule
     double last_send_time[n][n];
 
     const double SEND_INTERVAL = 0.0005;
-    const double SEND_TIMEOUT = 0.3;
-    const double ACK_TIMEOUT = 0.8;
     const double NEXT_TIME_STEP = 0.001;
-    const int MAX_WINDOW_SIZE = 7;
+
+    //fetch from parameters at init
+    const double SEND_TIMEOUT;
+    const double ACK_TIMEOUT;
+    const int MAX_WINDOW_SIZE;
+
     //Flags for stuffing
     const char FLAG = 1;
     const char ESC = 2;

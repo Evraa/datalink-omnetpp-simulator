@@ -114,6 +114,12 @@ void Node::initialize()
         }
     else
     {
+        //init parameters from omnetpp.ini file.
+        this->SEND_TIMEOUT = par("SEND_TIMEOUT").doubleValue();
+        this->ACK_TIMEOUT = par("ACK_TIMEOUT").doubleValue();
+        this->MAX_WINDOW_SIZE = par("MAX_WINDOW_SIZE").intValue();
+
+        //start these arrayes at zero.
         for(int i = 0; i < n; ++i)
         {
             for(int j = 0; j < n; ++j){
