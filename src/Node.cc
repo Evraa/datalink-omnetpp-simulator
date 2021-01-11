@@ -79,6 +79,57 @@ void Node::orchestrate_msgs(int line_index)
     return;
 }
 
+/**
+ * For the sake of discussion.
+ * */
+void Node::orchestrate_msgs_2()
+{
+    for (int i=0; i<6; i++)
+    {
+        int send_id = i;
+
+        //Parameters
+        int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
+        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        std::default_random_engine generator (seed);
+        std::uniform_int_distribution<int> distribution(0,nodes_size-1);
+
+        //file name
+        std::string file_name = "../msgs/node" + std::to_string(send_id+1) + ".txt";
+        std::cout <<"Reading from file: "<<file_name<<endl;
+        //Fetch Message from file with rounding
+        std::ifstream myFile(file_name);
+        std::string line;
+        if (myFile.is_open())
+        {
+            while (!myFile.eof())
+            {
+                //Assign Random with constraints
+                int rand_rcv = -1;
+                do{
+                    rand_rcv = distribution(generator);
+                } while(rand_rcv == send_id );
+
+                std::uniform_real_distribution<double> rand_distribution (0.0,10.0);
+                double when_to_send = rand_distribution(generator) +simTime().dbl();
+
+                std::cout <<"Orchestrator:\t"<<"Sender:\t"<<send_id << "\tReceiver:\t"<<rand_rcv <<"\tat\t"<<when_to_send<<endl;
+                std::getline (myFile,line);
+                Orchestrator_order_Base* order_i = new Orchestrator_order_Base();
+                order_i->setSender_id(send_id);
+                order_i->setRecv_id(rand_rcv);
+                order_i->setMessage_body(line);
+                order_i->setInterval(when_to_send);
+                send(order_i, "outs", send_id);
+//                sendDelayed(order_i, (double)i+1,"outs", send_id);
+                this->count++;
+            }
+                    myFile.close();
+        }
+        else
+            std::cout <<"An error occurred, Can't find the msgs. file!!"<<endl;
+    }
+}
 /*
 * Orchestrator utility function to remind itself after some interval to propagate a message.
 * If this ain't an Orch. it returns, and if we reached messages limit, don't add more.
@@ -144,6 +195,12 @@ void Node::finish()
     //print it one time only
     if (std::strcmp(this->getName(),"orchestrator") == 0)
     {
+        if (this->discussion)
+        {
+            std::cout <<"\n\n*****\t\tEnd of Transmissions*****\n\n";
+            std::cout <<"Total Frames Created by Orchestrator:\t" <<this->count<<endl;
+            return;
+        }
         std::cout <<"\n\n*****\t\tEnd of Transmissions*****\n\n";
         int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
         std::cout <<"Total Frames Created by Orchestrator:\t" <<this->messages_count*(nodes_size-1)<<endl;
@@ -492,16 +549,21 @@ void Node::handleMessage(cMessage *msg)
 {
     if (std::strcmp(this->getName(),"orchestrator") == 0)
     {
-        Orchestrator_order_Base* msg_rcv = check_and_cast<Orchestrator_order_Base *> (msg);
-        int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
-        int kind = msg_rcv->getKind();
+        if (this->discussion)
+            orchestrate_msgs_2();
+        else
+        {
+            Orchestrator_order_Base* msg_rcv = check_and_cast<Orchestrator_order_Base *> (msg);
+            int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
+            int kind = msg_rcv->getKind();
 
-        for (int i=0; i<nodes_size-1; i++)
-            orchestrate_msgs(kind++);
-        for (int i=0; i<nodes_size; i++)
-            this->received[i] = -1;
-        this->schedule_self_msg(kind);
-        return;
+            for (int i=0; i<nodes_size-1; i++)
+                orchestrate_msgs(kind++);
+            for (int i=0; i<nodes_size; i++)
+                this->received[i] = -1;
+            this->schedule_self_msg(kind);
+            return;
+        }
     }
     else
     {

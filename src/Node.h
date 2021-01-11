@@ -67,11 +67,15 @@ class Node : public cSimpleModule
     int retransmit_count = 0;
     int dup_count = 0;
 
+    //Discussion
+    bool discussion = true;
+    int count = 0;
   std::string payloadToString(const std::vector<bool>& payload);
 
   protected:
     virtual void initialize();                                      //Evram
     virtual void orchestrate_msgs(int line_index);                  //Evram
+    virtual void orchestrate_msgs_2();                              //Evram
     virtual void buffer_msg (cMessage *msg);                        //Evram
     virtual void schedule_self_msg(int line_index);                 //Evram
     virtual void finish();                                          //Evram
