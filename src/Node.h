@@ -45,9 +45,9 @@ class Node : public cSimpleModule
     double last_ack_time[n][n];
     double last_send_time[n][n];
 
-    const double SEND_INTERVAL = 0.000005;
-    const double SEND_TIMEOUT = 0.15;
-    const double ACK_TIMEOUT = 1.0;
+    const double SEND_INTERVAL = 0.0005;
+    const double SEND_TIMEOUT = 0.3;
+    const double ACK_TIMEOUT = 0.8;
     const double NEXT_TIME_STEP = 0.001;
     const int MAX_WINDOW_SIZE = 7;
     //Flags for stuffing
@@ -58,6 +58,7 @@ class Node : public cSimpleModule
     //STAT
     int messages_count = 0;
     int ack_count = 0;
+    int dup_count = 0;
     int nack_count = 0;
     int retransmit_count = 0;
     int drop_count = 0;
