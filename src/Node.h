@@ -61,13 +61,11 @@ class Node : public cSimpleModule
     int * received;
 
     //STAT
-    int messages_count = 0; //orch. only, needs to be multiplied by 5
+    int messages_count = 0; //useful messages or batch number for orch.
     int ack_count = 0;
     int drop_count = 0;
     int retransmit_count = 0;
     int dup_count = 0;
-    int nack_count = 0;
-//    int acked_msgs = 0;
 
   std::string payloadToString(const std::vector<bool>& payload);
 
@@ -88,7 +86,7 @@ class Node : public cSimpleModule
     virtual int current_window_size(int idx);                       //Kareem
 
     virtual void modify_msg(Frame_Base *frame);                     //Omar
-    virtual double delay_msg(bool dup=true);                        //Omar
+    virtual double delay_msg();                                     //Omar
     virtual bool loss_msg();                                        //Omar
     virtual bool dup_msg();                                         //Omar
 

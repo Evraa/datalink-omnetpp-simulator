@@ -30,11 +30,11 @@ void Node::orchestrate_msgs(int line_index)
     int nodes_size = getParentModule()->par("N").intValue();   //eg. N=8
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator (seed);
-    std::uniform_int_distribution<int> distribution(1,nodes_size-1);
+    std::uniform_int_distribution<int> distribution(0,nodes_size-1);
 
     //Assign Random with constraints
-    int rand_sender = 0;
-    int rand_rcv = 0;
+    int rand_sender = -1;
+    int rand_rcv = -1;
     do{
         rand_rcv = distribution(generator);
         rand_sender = distribution(generator);
@@ -380,10 +380,8 @@ void Node::modify_msg (Frame_Base* frame)
 /*
 *  Delaying msg using bernoulli distribution
 */
-double Node::delay_msg (bool dup)
+double Node::delay_msg ()
 {
-    if (!dup)
-        this->messages_count++;
     double rand_delay = uniform(0,1);
     double p_delay = par("p_delay").doubleValue();
     // double p_delay = 0.6;
@@ -525,6 +523,7 @@ void Node::handleMessage(cMessage *msg)
                 if(strcmp(msg->getName(), "Add to buffer")==0){
                     int idx = msg->getKind();
                     std::cout << "Add to buffer *************" <<endl;
+                    this->messages_count++;
                     Frame_Base* msg_frame = check_and_cast<Frame_Base *> (msg);
                     std::cout << "Add to buffer of node " << this->getIndex() << " to send to node " << idx;
                     this->messages_info[myind][idx].push_back(msg_frame);
@@ -552,7 +551,7 @@ void Node::handleMessage(cMessage *msg)
                         msg_frame->setKind(this->getIndex());
                         msg_frame->setFrame_seq(this->nxt_to_send[myind][idx]);
                         if(!this->loss_msg()){
-                            sendDelayed(msg_frame, this->delay_msg(false),"outs", dest_gate);
+                            sendDelayed(msg_frame, this->delay_msg(),"outs", dest_gate);
                             if(this->dup_msg()){
                                 Frame_Base* sg_frame = new Frame_Base();
                                 sg_frame->setPayload(temp_frame->getPayload());
