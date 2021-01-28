@@ -9,3 +9,11 @@ Within a distributed (mesh like) architecture.
   + Download the free tool omnetpp, move the project to samples directory, and run the simulation.
   + You may tune the parameters on the omnetpp.ini file, in src directory if you're using linux based system, in simulation directory for windows users.
   
+## Authors 
+>[Muhammad Sayed Mahdy](https://github.com/muhammad-sayed-mahdy)
+
+>[Omar Desoky](https://github.com/OmarDesoky) 
+
+>[Kareem Osama Sobeih](https://github.com/KareemOsamaSobeih)
+
+>[Evram Yousef](https://github.com/Evraa)
